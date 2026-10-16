@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="theme-color" content="#291b20" />
+  <title>Central de carta · Isabella's</title>
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="./style.css" />
+  <script src="./app.js" type="module"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Ir al contenido</a>
+  <section class="login-screen" id="login-screen" hidden>
+    <div class="login-mark" aria-hidden="true">I<span>’</span></div>
+    <div class="login-card">
+      <p class="overline">Isabella's · gestión privada</p>
+      <h1>Central de carta</h1>
+      <p>Accede para actualizar la carta que ven tus clientes.</p>
+      <form id="login-form">
+        <label for="password">Contraseña de administrador</label>
+        <div class="password-field">
+          <input id="password" type="password" autocomplete="current-password" required />
+          <button class="password-toggle" id="toggle-password" type="button" aria-controls="password" aria-pressed="false">Mostrar</button>
+        </div>
+        <button type="submit">Entrar a la central</button>
+      </form>
+      <p class="login-message" id="login-message" role="alert"></p>
+      <a href="../" class="return-link">Ver la carta pública</a>
+    </div>
+  </section>
+
+  <div class="app-shell" id="app-shell" hidden>
+    <aside class="sidebar" aria-label="Navegación de la central">
+      <div class="sidebar-brand"><span class="monogram">I<span>’</span></span><div><strong>Isabella's</strong><small>Central de carta</small></div></div>
+      <div class="sidebar-divider"></div>
+      <p class="sidebar-caption">Administración</p>
+      <nav class="main-nav" aria-label="Secciones">
+        <button type="button" data-tab="products" class="is-active"><span class="nav-symbol" aria-hidden="true">◈</span> Productos <span id="product-count"></span></button>
+        <button type="button" data-tab="categories"><span class="nav-symbol" aria-hidden="true">▤</span> Categorías <span id="category-count"></span></button>
+      </nav>
+      <div class="sidebar-foot"><span class="online-dot"></span> Vista previa local<br /><small>Los cambios se guardan en este equipo.</small></div>
+    </aside>
+
+    <div class="workspace">
+      <header class="topbar"><div class="breadcrumbs">Isabella's <span>/</span> <strong id="breadcrumb-current">Productos</strong></div><div class="top-actions"><a href="../" target="_blank" rel="noopener noreferrer">Ver carta <span aria-hidden="true">↗</span></a><button id="logout" type="button">Salir</button></div></header>
+      <main id="main" tabindex="-1">
+        <div class="page-heading"><div><p class="overline">Carta 2026 · control editorial</p><h1 id="page-title">Productos</h1><p id="page-description">Actualiza precios, nombres y descripciones de cada plato.</p></div><button class="primary-button" id="new-button" type="button">+ Nuevo producto</button></div>
+        <div class="notice" id="notice" role="status" aria-live="polite" hidden></div>
+        <div class="content-layout">
+          <section class="catalog-panel" aria-label="Listado"><div class="catalog-tools"><label for="search" class="sr-only">Buscar</label><input id="search" type="search" placeholder="Buscar en la carta" autocomplete="off" /><span id="list-count"></span></div><div id="catalog-list"></div></section>
+          <section class="editor-panel" id="editor-panel" aria-label="Editor"></section>
+        </div>
+      </main>
+    </div>
+  </div>
+</body>
+</html>

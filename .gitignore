@@ -1,0 +1,10 @@
+node_modules/
+data/
+preview-a/assets/uploads/
+.venv-translation/
+.local-translation/
+.env
+.env.*
+*.log
+Thumbs.db
+.DS_Store
