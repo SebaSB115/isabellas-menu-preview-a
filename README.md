@@ -10,6 +10,12 @@ Prototipo independiente de la web oficial. Combina las nueve páginas del menú 
 
 La central publicada en GitHub Pages es una **demostración interactiva sin login**. Permite probar la edición, pero guarda los cambios solo en el navegador de quien la usa; no modifica la carta pública ni `isabellascr.com`. La contraseña y el servidor privado local no se publican. Se puede regenerar desde la interfaz privada con `npm.cmd run build:pages-admin`.
 
+## Investigación para la propuesta comercial
+
+**[Leer el informe de Hero A y la central WordPress](https://sebasb115.github.io/isabellas-menu-preview-a/investigacion/)** · [Descargar PDF](https://sebasb115.github.io/isabellas-menu-preview-a/investigacion/informe.pdf) · [Abrir fuente editable](notes/investigacion-propuesta-comercial-isabella-hero-a-wordpress-2026-10-16.md)
+
+El informe resume la grabación y el alcance acordado, compara WordPress con otras opciones, explica la recomendación, separa la traducción automática como trabajo propio y enumera las partidas y decisiones necesarias para cotizar. Es investigación para revisión comercial: **la integración con WordPress todavía no está implementada**. El [análisis detallado de la reunión](notes/analisis-menu-isabella-2026-10-16.md) conserva la evidencia funcional.
+
 Para ejecutarla y editarla en Windows:
 
 ```powershell
