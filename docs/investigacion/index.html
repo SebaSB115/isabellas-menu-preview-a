@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <title>Isabella’s · investigación Hero A y central WordPress</title>
 <style>
   :root { --ink: #291d1b; --wine: #552c2b; --bronze: #986b47; --cream: #fbf7ef; --line: #d7c5b4; }
@@ -32,6 +33,24 @@
   .document-nav strong { margin-right:auto; color:var(--wine); letter-spacing:.12em; text-transform:uppercase; }
   .document-nav a { white-space:nowrap; }
   .footer { margin-top: 30px; padding-top: 11px; border-top: 1px solid var(--line); color: #775f52; font: 11px/1.4 Arial, sans-serif; }
+  @media (max-width: 650px) {
+    body { margin: 0; padding: 26px 18px 32px; }
+    h1 { font-size: 29px; }
+    h2 { font-size: 20px; }
+    .document-nav { gap: 8px 14px; }
+    .document-nav strong { flex-basis: 100%; }
+    table:nth-of-type(2), table:nth-of-type(2) tbody, table:nth-of-type(2) tr { display: block; }
+    table:nth-of-type(2) thead { display: none; }
+    table:nth-of-type(2) tr { margin-bottom: 12px; border: 1px solid var(--line); }
+    table:nth-of-type(2) td { display: block; width: 100%; border: 0; border-bottom: 1px solid var(--line); }
+    table:nth-of-type(2) td:first-child { background: var(--wine); color: white; font-weight: bold; }
+    table:nth-of-type(2) td:nth-child(2)::before,
+    table:nth-of-type(2) td:nth-child(3)::before,
+    table:nth-of-type(2) td:nth-child(4)::before { display: block; color: var(--bronze); font: bold 11px/1.4 Arial, sans-serif; letter-spacing: .08em; text-transform: uppercase; }
+    table:nth-of-type(2) td:nth-child(2)::before { content: 'Ventaja'; }
+    table:nth-of-type(2) td:nth-child(3)::before { content: 'Límite'; }
+    table:nth-of-type(2) td:nth-child(4)::before { content: 'Evaluación'; }
+  }
   @page { size: A4; margin: 12mm 13mm 13mm; }
   @media print {
     html { background: white; }
