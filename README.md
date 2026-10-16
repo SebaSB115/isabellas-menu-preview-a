@@ -4,6 +4,8 @@ Prototipo independiente de la web oficial. Combina las nueve páginas del menú 
 
 ## Ver el avance
 
+**[Abrir la vista navegable del Preview A](https://sebasb115.github.io/isabellas-menu-preview-a/)**
+
 La vista publicada mediante GitHub Pages contiene **solo la carta de consulta**. Los cambios de la central local no se publican automáticamente en Pages ni en `isabellascr.com`.
 
 Para ejecutarla y editarla en Windows:

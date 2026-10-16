@@ -360,11 +360,5 @@ $('magazine-reader').addEventListener('touchend', event => {
 window.addEventListener('languagechange', () => {
   if (!fromStorage() && !new URLSearchParams(location.search).has('lang')) setLanguage(preferredLanguage(), false);
 });
-try {
-  const response = await fetch('./api/menu', { cache:'no-store' });
-  if (response.ok) {
-    const catalog = await response.json();
-    if (Array.isArray(catalog.categories)) menuCategories = catalog.categories;
-  }
-} catch { /* El archivo estático conserva la carta inicial para revisión sin servidor. */ }
+// GitHub Pages sirve únicamente la carta de consulta incluida en menu-data.js.
 setLanguage(language, false);
