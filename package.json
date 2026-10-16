@@ -6,6 +6,7 @@
   "description": "Preview editorial aislado de la carta de Isabella's Costa Rica",
   "scripts": {
     "serve:preview-a": "node scripts/serve-preview-a-admin.mjs",
+    "build:pages-admin": "node scripts/build-pages-admin.mjs",
     "admin:setup": "node scripts/setup-menu-admin.mjs",
     "translate:setup": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup-translation.ps1",
     "check:preview-a": "node scripts/check-preview-a.mjs",

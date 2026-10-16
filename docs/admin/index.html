@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="theme-color" content="#291b20" />
+  <title>Demo de la central · Isabella's</title>
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="./style.css" />
+  <script src="./app.js" type="module"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Ir al contenido</a>
+  <div class="app-shell" id="app-shell">
+    <aside class="sidebar" aria-label="Navegación de la central">
+      <div class="sidebar-brand"><span class="monogram">I<span>’</span></span><div><strong>Isabella's</strong><small>Central de carta</small></div></div>
+      <div class="sidebar-divider"></div>
+      <p class="sidebar-caption">Administración</p>
+      <nav class="main-nav" aria-label="Secciones">
+        <button type="button" data-tab="products" class="is-active"><span class="nav-symbol" aria-hidden="true">◈</span> Productos <span id="product-count"></span></button>
+        <button type="button" data-tab="categories"><span class="nav-symbol" aria-hidden="true">▤</span> Categorías <span id="category-count"></span></button>
+      </nav>
+      <div class="sidebar-foot"><span class="online-dot"></span> Demo pública<br /><small>Los cambios solo viven en este navegador.</small></div>
+    </aside>
+
+    <div class="workspace">
+      <header class="topbar"><div class="breadcrumbs">Isabella's <span>/</span> <strong id="breadcrumb-current">Productos</strong></div><div class="top-actions"><a href="../" target="_blank" rel="noopener noreferrer">Ver carta <span aria-hidden="true">↗</span></a><button id="reset-demo" type="button">Restablecer demo</button></div></header>
+      <div class="demo-banner" role="note"><strong>Demostración de la central</strong><span>Puedes probar la edición. Los cambios se guardan solo en este navegador; no modifican el menú público ni la web oficial. La traducción automática y el acceso privado requieren la integración final.</span></div>
+      <main id="main" tabindex="-1">
+        <div class="page-heading"><div><p class="overline">Carta 2026 · demostración editorial</p><h1 id="page-title">Productos</h1><p id="page-description">Actualiza precios, nombres y descripciones de cada plato.</p></div><button class="primary-button" id="new-button" type="button">+ Nuevo producto</button></div>
+        <div class="notice" id="notice" role="status" aria-live="polite" hidden></div>
+        <div class="content-layout">
+          <section class="catalog-panel" aria-label="Listado"><div class="catalog-tools"><label for="search" class="sr-only">Buscar</label><input id="search" type="search" placeholder="Buscar en la carta" autocomplete="off" /><span id="list-count"></span></div><div id="catalog-list"></div></section>
+          <section class="editor-panel" id="editor-panel" aria-label="Editor"></section>
+        </div>
+      </main>
+    </div>
+  </div>
+</body>
+</html>

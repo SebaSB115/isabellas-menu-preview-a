@@ -6,7 +6,9 @@ Prototipo independiente de la web oficial. Combina las nueve páginas del menú 
 
 **[Abrir la vista navegable del Preview A](https://sebasb115.github.io/isabellas-menu-preview-a/)**
 
-La vista publicada mediante GitHub Pages contiene **solo la carta de consulta**. Los cambios de la central local no se publican automáticamente en Pages ni en `isabellascr.com`.
+**[Abrir la demostración pública de la central](https://sebasb115.github.io/isabellas-menu-preview-a/admin/)**
+
+La central publicada en GitHub Pages es una **demostración interactiva sin login**. Permite probar la edición, pero guarda los cambios solo en el navegador de quien la usa; no modifica la carta pública ni `isabellascr.com`. La contraseña y el servidor privado local no se publican. Se puede regenerar desde la interfaz privada con `npm.cmd run build:pages-admin`.
 
 Para ejecutarla y editarla en Windows:
 
@@ -32,6 +34,6 @@ La segunda comprobación requiere haber ejecutado `npm.cmd run translate:setup`.
 
 ## Alcance
 
-La carpeta `docs/` contiene la versión pública estática para GitHub Pages. `preview-a/` contiene el código de la carta y la central local; `scripts/` contiene el servidor y las comprobaciones. La central local necesita un servidor Node y no funciona en GitHub Pages. Este prototipo no está conectado a WordPress ni a la web oficial. Antes de publicar contenido real se deben revisar nombres, ingredientes, precios y traducciones culinarias.
+La carpeta `docs/` contiene la carta estática y una demostración pública de la central para GitHub Pages. `preview-a/` contiene el código de la carta y la central privada local; `scripts/` contiene el servidor y las comprobaciones. La central privada necesita un servidor Node y no funciona en GitHub Pages. Este prototipo no está conectado a WordPress ni a la web oficial. Antes de publicar contenido real se deben revisar nombres, ingredientes, precios y traducciones culinarias.
 
 Fuente visual y de contenido: [menú oficial de Isabella's](https://isabellascr.com/#menu). Ver [detalle del Preview A](preview-a/README.md) y [análisis de la reunión](notes/analisis-menu-isabella-2026-10-16.md).
