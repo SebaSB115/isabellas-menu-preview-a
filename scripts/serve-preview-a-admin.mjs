@@ -15,6 +15,12 @@ const uploadDir = resolve(root, 'assets/uploads');
 const explicitPort = process.env.ISABELLA_PREVIEW_PORT;
 let port = Number(explicitPort) || 4174;
 const mime = { '.html':'text/html; charset=utf-8', '.js':'text/javascript; charset=utf-8', '.css':'text/css; charset=utf-8', '.json':'application/json; charset=utf-8', '.webp':'image/webp', '.svg':'image/svg+xml' };
+const directoryPages = new Map([
+  ['/admin/', '/admin/index.html'],
+  ['/central/', '/central/index.html'],
+  ['/central/isabella/', '/central/isabella/index.html'],
+  ['/central/boccantina/', '/central/boccantina/index.html'],
+]);
 const sessions = new Map();
 const failures = new Map();
 const maxBody = 10 * 1024 * 1024;
@@ -127,8 +133,9 @@ async function handle(request, response) {
       return upload(request, response);
     }
     if (request.method !== 'GET' && request.method !== 'HEAD') return json(response, 405, { error:'Método no permitido.' });
-    if (path === '/admin') { response.writeHead(308, headers({ location:'/admin/' })); response.end(); return; }
-    const target = resolve(root, `.${path === '/' ? '/index.html' : path === '/admin/' ? '/admin/index.html' : path}`);
+    const directoryPath = `${path}/`;
+    if (directoryPages.has(directoryPath)) { response.writeHead(308, headers({ location:directoryPath })); response.end(); return; }
+    const target = resolve(root, `.${path === '/' ? '/index.html' : directoryPages.get(path) || path}`);
     if (!target.startsWith(`${root}${sep}`) || !mime[extname(target).toLowerCase()] || !(await stat(target)).isFile()) return json(response, 404, { error:'No encontrado.' });
     const file = await readFile(target);
     response.writeHead(200, headers({ 'content-type':mime[extname(target).toLowerCase()], 'cache-control':extname(target).toLowerCase() === '.webp' ? 'public, max-age=3600' : 'no-store' }));
@@ -146,4 +153,4 @@ server.on('error', error => {
   if (error.code === 'EADDRINUSE' && !explicitPort && port < 4184) { port++; server.listen(port, '127.0.0.1'); }
   else { console.error(error); process.exitCode = 1; }
 });
-server.listen(port, '127.0.0.1', () => console.log(`Isabella's menú: http://127.0.0.1:${port}/ · Central: http://127.0.0.1:${port}/admin/`));
+server.listen(port, '127.0.0.1', () => console.log(`Isabella's menú: http://127.0.0.1:${port}/ · Restaurantes: http://127.0.0.1:${port}/central/ · Admin: http://127.0.0.1:${port}/admin/`));

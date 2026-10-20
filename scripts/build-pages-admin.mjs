@@ -40,8 +40,8 @@ const bootstrapStart = app.indexOf("try {\n  const session = await api('/api/adm
 if (bootstrapStart < 0) throw new Error('No se encontró el arranque del administrador local.');
 app = app.slice(0, bootstrapStart) + "try {\n  catalog = await api('/api/admin/menu');\n  selectedCategory = catalog.categories[0]?.id || null;\n  selectedProduct = catalog.categories.flatMap(category => category.items)[0]?.id || null;\n  showApp();\n} catch (error) { notice(error.message, true); }\n";
 app = replaceOnce(app, 'Inglés, alemán, árabe y hebreo se generan automáticamente al guardar.', 'En la versión final, los demás idiomas se generarán al guardar. En esta demo, los cambios de texto quedan en español.');
-app = replaceOnce(app, 'Escribe nombre y descripción en español; al guardar se traducen los otros idiomas.', 'Edita nombre y descripción en español. La traducción automática se integrará en WordPress.');
-app = replaceOnce(app, 'El sistema genera tamaños WebP para escritorio y móvil.', 'La demo reduce la imagen a WebP; el recorte final se ajustará en WordPress.');
+app = replaceOnce(app, 'Escribe nombre y descripción en español; al guardar se traducen los otros idiomas.', 'Edita nombre y descripción en español. La traducción automática se integrará en la futura administración compartida.');
+app = replaceOnce(app, 'El sistema genera tamaños WebP para escritorio y móvil.', 'La demo reduce la imagen a WebP; el recorte final se ajustará en la futura administración compartida.');
 app = replaceOnce(app, "'Producto creado y visible en la carta.'", "'Producto creado en esta demo.'");
 app = replaceOnce(app, "'Producto actualizado.'", "'Producto actualizado en esta demo.'");
 app = replaceOnce(app, "'Categoría creada.'", "'Categoría creada en esta demo.'");

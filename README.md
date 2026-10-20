@@ -8,6 +8,8 @@ Prototipo independiente de la web oficial. Combina las nueve páginas del menú 
 
 **[Abrir la demostración pública de la central](https://sebasb115.github.io/isabellas-menu-preview-a/admin/)**
 
+**[Elegir restaurante en la central compartida](https://sebasb115.github.io/isabellas-menu-preview-a/central/)**: entrada de demostración para Isabella's y Boccantina. Cada restaurante conserva sus propias vistas y datos; Boccantina aún tiene un editor de extras, no un editor general de productos. Esta entrada no implementa autenticación compartida ni Firebase.
+
 La central publicada en GitHub Pages es una **demostración interactiva sin login**. Permite probar la edición, pero guarda los cambios solo en el navegador de quien la usa; no modifica la carta pública ni `isabellascr.com`. La contraseña y el servidor privado local no se publican. Se puede regenerar desde la interfaz privada con `npm.cmd run build:pages-admin`.
 
 ## Investigación para la propuesta comercial
@@ -15,6 +17,8 @@ La central publicada en GitHub Pages es una **demostración interactiva sin logi
 **[Leer el informe de Hero A y la central WordPress](https://sebasb115.github.io/isabellas-menu-preview-a/investigacion/)** · [Descargar PDF](https://sebasb115.github.io/isabellas-menu-preview-a/investigacion/informe.pdf) · [Abrir fuente editable](notes/investigacion-propuesta-comercial-isabella-hero-a-wordpress-2026-10-16.md)
 
 El informe resume la grabación y el alcance acordado, compara WordPress con otras opciones, explica la recomendación, separa la traducción automática como trabajo propio y enumera las partidas y decisiones necesarias para cotizar. Es investigación para revisión comercial: **la integración con WordPress todavía no está implementada**. El [análisis detallado de la reunión](notes/analisis-menu-isabella-2026-10-16.md) conserva la evidencia funcional.
+
+**Cambio de alcance (20 de octubre de 2026):** el informe anterior conserva la propuesta histórica. Alejandro recomendó después Node + Firebase para la administración de datos de ambos restaurantes. El selector compartido de este repositorio organiza las demos actuales y no implementa aún esa arquitectura.
 
 Para ejecutarla y editarla en Windows:
 
@@ -41,5 +45,7 @@ La segunda comprobación requiere haber ejecutado `npm.cmd run translate:setup`.
 ## Alcance
 
 La carpeta `docs/` contiene la carta estática y una demostración pública de la central para GitHub Pages. `preview-a/` contiene el código de la carta y la central privada local; `scripts/` contiene el servidor y las comprobaciones. La central privada necesita un servidor Node y no funciona en GitHub Pages. Este prototipo no está conectado a WordPress ni a la web oficial. Antes de publicar contenido real se deben revisar nombres, ingredientes, precios y traducciones culinarias.
+
+El selector compartido vive en `preview-a/central/` y se publica en `docs/central/` con `npm.cmd run build:central`. En el servidor local se abre en `/central/`; la administración de Isabella's allí conserva su inicio de sesión local. Los enlaces de Boccantina abren su demo pública existente.
 
 Fuente visual y de contenido: [menú oficial de Isabella's](https://isabellascr.com/#menu). Ver [detalle del Preview A](preview-a/README.md) y [análisis de la reunión](notes/analisis-menu-isabella-2026-10-16.md).
