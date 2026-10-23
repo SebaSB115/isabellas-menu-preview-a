@@ -37,11 +37,15 @@ function localized(value, required = false, max = 250) {
 export function validateCatalog(input) {
   if (!input || !Array.isArray(input.categories) || input.categories.length > 50) return 'La lista de categorías no es válida.';
   const categoryIds = new Set();
+  const categoryNames = new Set();
   const itemIds = new Set();
   for (const category of input.categories) {
     if (!idPattern.test(category?.id ?? '') || categoryIds.has(category.id)) return 'Hay una categoría con identificador inválido o repetido.';
     categoryIds.add(category.id);
     if (!localized(category.title, true, 100)) return `Revisa el nombre y los idiomas de ${category.id}.`;
+    const name = category.title.es.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es').replace(/\s+/g, ' ').trim();
+    if (name.length < 2 || categoryNames.has(name)) return 'Cada categoría necesita un nombre distinto de al menos 2 caracteres.';
+    categoryNames.add(name);
     if (!originals.has(category.source)) return `La página de origen de ${category.id} no es válida.`;
     if (category.visible !== undefined && typeof category.visible !== 'boolean') return `La visibilidad de ${category.id} no es válida.`;
     if (category.art !== undefined && category.art !== null) {
@@ -97,6 +101,11 @@ async function saveCatalogNow(next, expectedVersion) {
   if (current.version !== expectedVersion) return { conflict: true, current };
   const error = validateCatalog(next);
   if (error) return { error };
+  const nextIds = new Set(next.categories.flatMap(category => category.items.map(item => item.id)));
+  for (const category of current.categories) {
+    if (next.categories.some(entry => entry.id === category.id)) continue;
+    if (category.items.some(item => !nextIds.has(item.id))) return { error:`Reasigna todos los productos de «${category.title.es}» antes de eliminar la categoría.` };
+  }
   const categories = structuredClone(next.categories);
   await applyAutomaticTranslations(categories, current.categories);
   const translatedError = validateCatalog({ categories });

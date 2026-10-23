@@ -1,0 +1,36 @@
+.people-section { margin-top:2.2rem; }
+.people-head { display:flex; align-items:center; justify-content:space-between; gap:1.5rem; }
+.people-head h2 { margin:0; font:500 1.45rem/1.2 'Playfair Display',Georgia,serif; }
+.people-head p { margin:.3rem 0 0; color:var(--muted); }
+#feedback { min-height:1.4em; margin:1rem 0; color:#276247; font-weight:600; }
+#feedback[data-error=true],#form-error { color:#a52d36; }
+.people-table-wrap { overflow:hidden; border:1px solid var(--line); border-radius:8px; background:var(--white); }
+.people-table-wrap table { width:100%; border-collapse:collapse; text-align:left; }
+.people-table-wrap th { padding:.9rem 1rem; background:#f9f5ef; color:#6b5b56; font-size:.76rem; }
+.people-table-wrap td { padding:1rem; border-top:1px solid #e8ded2; vertical-align:middle; }
+.people-table-wrap td:nth-child(3) { color:#6a5c57; font-size:.87rem; }
+.people-table-wrap td:last-child { text-align:right; }
+.person-state { display:inline-block; padding:.25rem .65rem; border-radius:2rem; background:#e6f2e9; color:#245d3b; font-size:.77rem; font-weight:700; }
+.person-state[data-active=false] { background:#f5e8e8; color:#953d43; }
+.person-edit { min-height:42px; padding:.45rem .65rem; border:0; background:transparent; color:#6f3d4c; font-weight:700; text-decoration:underline; text-underline-offset:3px; }
+.person-protected { color:#716962; font-size:.78rem; }
+.people-empty { padding:2rem 1rem !important; color:var(--muted); text-align:center !important; }
+#user-dialog { width:min(680px,calc(100vw - 28px)); max-height:min(92vh,900px); overflow:hidden; padding:0; border:1px solid #c4b3a6; border-radius:8px; background:var(--white); color:var(--ink); box-shadow:0 18px 48px #28191e40; }
+#user-dialog::backdrop { background:#1d1018a8; }
+#user-form { display:flex; flex-direction:column; max-height:min(92vh,900px); }
+.dialog-head { display:flex; justify-content:space-between; gap:1rem; padding:1.3rem 1.7rem 1rem; border-bottom:1px solid var(--line); }
+.dialog-head h2 { margin:0; font-size:1.6rem; }
+.dialog-close { width:44px; height:44px; border:0; background:transparent; font-size:1.6rem; }
+.dialog-body { display:grid; gap:1.1rem; min-height:0; overflow:auto; padding:1.4rem 1.7rem; }
+.dialog-body label { display:grid; gap:.4rem; font-size:.87rem; }
+.dialog-body label small { color:var(--muted); font-size:.76rem; font-weight:400; }
+.dialog-fields { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+.dialog-body fieldset { margin:0; padding:.8rem 1rem; border:1px solid var(--line); }
+.dialog-body legend { padding:0 .3rem; font-weight:700; }
+#permission-options { display:grid; grid-template-columns:1fr 1fr; gap:.4rem; }
+#permission-options label,.dialog-body .active-label { display:flex; align-items:center; gap:.65rem; min-height:42px; font-weight:400; }
+.dialog-body input[type=checkbox] { width:19px; height:19px; min-height:19px; padding:0; flex:0 0 auto; accent-color:#542a38; }
+#form-error { min-height:1em; margin:0; font-size:.84rem; font-weight:700; }
+.dialog-actions { display:flex; justify-content:flex-end; gap:.7rem; padding:1rem 1.7rem; border-top:1px solid var(--line); }
+.secondary-button { min-height:45px; padding:.65rem 1rem; border:1px solid var(--line); border-radius:3px; background:white; color:var(--ink); font-weight:700; }
+@media(max-width:760px) { .people-head { align-items:flex-start; flex-direction:column; } .people-table-wrap thead { display:none; } .people-table-wrap table,.people-table-wrap tbody,.people-table-wrap tr,.people-table-wrap td { display:block; width:100%; } .people-table-wrap tr { padding:.8rem; border-top:1px solid var(--line); } .people-table-wrap tr:first-child { border-top:0; } .people-table-wrap td { display:flex; justify-content:space-between; gap:1rem; padding:.3rem 0; border:0; text-align:right; } .people-table-wrap td::before { content:attr(data-label); flex:0 0 95px; color:var(--muted); font-size:.78rem; font-weight:700; text-align:left; } .people-table-wrap .people-empty { display:block; text-align:center !important; } .people-table-wrap .people-empty::before { content:none; } .dialog-fields,#permission-options { grid-template-columns:1fr; } .dialog-head,.dialog-body,.dialog-actions { padding-inline:1rem; } }

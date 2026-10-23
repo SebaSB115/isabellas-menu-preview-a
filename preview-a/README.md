@@ -1,6 +1,6 @@
 # Isabella's · Preview A del menú 2026
 
-Vista previa local y aislada. No modifica la web oficial ni publica contenido. Iniciar desde la raíz del repositorio con `npm.cmd run serve:preview-a` y abrir `http://127.0.0.1:4174/`. Para revisar una dirección concreta: `?lang=es`, `?lang=en`, `?lang=de`, `?lang=ar` o `?lang=he`.
+Vista previa local y aislada. No modifica la web oficial ni publica contenido. Iniciar desde la raíz del repositorio con `npm.cmd run serve:preview-a` y abrir `http://127.0.0.1:4180/`. Esta ruta abre Isabella’s Journal; la carta anterior está en `/borrador-1.html` como Borrador 1 en espera. Ambas leen el catálogo que guarda la Central local. Para revisar un idioma: `?lang=es`, `?lang=en`, `?lang=de`, `?lang=ar` o `?lang=he`.
 
 ## Fuente del catálogo
 

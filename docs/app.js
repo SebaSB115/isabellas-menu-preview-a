@@ -108,7 +108,6 @@ function renderText() {
   $('menu-search').placeholder = t.searchPlaceholder;
   $('menu-search').setAttribute('dir', 'auto');
   document.querySelector('.header-nav').setAttribute('aria-label', t.navLabel);
-  document.querySelector('.brand').setAttribute('aria-label', t.brandLabel);
   $('category-nav').setAttribute('aria-label', t.categoriesLabel);
   $('magazine-reader').setAttribute('aria-label', t.menuTitle);
   $('language-select').value = language;
@@ -196,7 +195,7 @@ function renderMenu(preferredCategory) {
     visible: category.items.filter(item => item.visible !== false && (!needle || normalize(`${translated(category.title)} ${translated(item.name)} ${translated(item.description)}`).includes(needle))),
   })).filter(group => group.visible.length);
   $('result-count').textContent = t.result(groups.reduce((count, group) => count + group.visible.length, 0));
-  $('category-nav').innerHTML = groups.map(group => `<button class="category-link" type="button" data-category="${escapeHtml(group.id)}"><span>${escapeHtml(translated(group.title))}</span><small>${group.visible.length}</small></button>`).join('');
+  $('category-nav').innerHTML = groups.map(group => `<button class="category-link" type="button" data-category="${escapeHtml(group.id)}"><em class="category-index" aria-hidden="true">${String(group.index + 1).padStart(2, '0')}</em><span>${escapeHtml(translated(group.title))}</span><small>${group.visible.length}</small></button>`).join('');
   spreads = [];
   for (const category of groups) {
     const runs = [];
@@ -206,7 +205,8 @@ function renderMenu(preferredCategory) {
       runs.at(-1).items.push(item);
     }
     for (const run of runs) {
-      const pageCount = Math.ceil(run.items.length / 5);
+      const itemsPerPage = matchMedia('(max-width: 700px)').matches ? 2 : 3;
+      const pageCount = Math.ceil(run.items.length / itemsPerPage);
       const base = Math.floor(run.items.length / pageCount);
       const extra = run.items.length % pageCount;
       let offset = 0;
@@ -232,12 +232,9 @@ function turnTo(index) {
   if (index < 0 || index >= spreads.length) return;
   if (turning) { pendingTurn = index; return; }
   if (index === activeSpread) return;
-  const reader = $('magazine-reader');
   const list = $('menu-list');
   const oldSpread = list.querySelector('.magazine-spread');
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  try { reader.scrollIntoView({ behavior: 'instant', block: 'start' }); }
-  catch { reader.scrollIntoView({ behavior: 'auto', block: 'start' }); }
   if (reduced || !oldSpread) {
     activeSpread = index;
     renderSpread();
@@ -360,5 +357,18 @@ $('magazine-reader').addEventListener('touchend', event => {
 window.addEventListener('languagechange', () => {
   if (!fromStorage() && !new URLSearchParams(location.search).has('lang')) setLanguage(preferredLanguage(), false);
 });
-// GitHub Pages sirve únicamente la carta de consulta incluida en menu-data.js.
+matchMedia('(max-width: 700px)').addEventListener('change', () => {
+  const visibleItem = spreads[activeSpread]?.items[0]?.id;
+  renderMenu(spreads[activeSpread]?.category.id);
+  const nextIndex = spreads.findIndex(spread => spread.items.some(item => item.id === visibleItem));
+  if (nextIndex >= 0) { activeSpread = nextIndex; renderSpread(); }
+});
+try {
+  const response = await fetch('./api/menu', { cache:'no-store' });
+  if (response.ok) {
+    const catalog = await response.json();
+    if (Array.isArray(catalog.categories)) menuCategories = catalog.categories;
+  }
+} catch { /* El archivo estático conserva la carta inicial para revisión sin servidor. */ }
 setLanguage(language, false);
+document.documentElement.classList.remove('locale-pending');

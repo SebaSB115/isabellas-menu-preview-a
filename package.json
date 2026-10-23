@@ -11,7 +11,10 @@
     "admin:setup": "node scripts/setup-menu-admin.mjs",
     "translate:setup": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup-translation.ps1",
     "check:preview-a": "node scripts/check-preview-a.mjs",
-    "check:admin": "node scripts/check-admin.mjs"
+    "check:admin": "node scripts/check-admin.mjs",
+    "build:entry-logos": "node scripts/build-entry-logos.mjs",
+    "sync:admin-ui": "node scripts/sync-admin-entry.mjs",
+    "check:admin-ui": "node scripts/sync-admin-entry.mjs --check"
   },
   "dependencies": {
     "sharp": "^0.35.5"

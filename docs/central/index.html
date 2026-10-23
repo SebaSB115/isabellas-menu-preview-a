@@ -4,34 +4,40 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex, nofollow" />
-  <meta name="theme-color" content="#231a1d" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; base-uri 'none'; form-action 'none'; frame-src 'none'" />
-  <title>Central de restaurantes · Seleccionar tienda</title>
-  <link rel="stylesheet" href="./style.css" />
+  <meta name="theme-color" content="#f5f6f4" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-src 'none'" />
+  <title>Central de restaurantes · Seleccionar restaurante</title>
+  <link rel="stylesheet" href="../admin-entry.css" />
 </head>
-<body>
-  <a class="skip-link" href="#contenido">Ir al contenido</a>
-  <header class="masthead"><div class="masthead__inner">
-    <a class="home-link" href="./" aria-current="page"><span class="mark" aria-hidden="true"><i></i><i></i></span><span><strong>Central de restaurantes</strong><small>Isabella's y Boccantina</small></span></a>
-    <span class="environment">Vista de demostración</span>
-  </div></header>
-  <main class="page" id="contenido">
-    <div class="intro">
-      <p class="eyebrow">Administración de los restaurantes</p>
-      <h1>¿Qué restaurante vas a gestionar?</h1>
-      <p>Selecciona un restaurante para ver las herramientas administrativas que ya están disponibles en su demo.</p>
+<body class="admin-entry">
+  <a class="entry-skip" href="#contenido">Ir al contenido</a>
+  <header class="entry-header">
+    <div class="entry-shell entry-header__inner">
+      <p class="entry-header__title">Central de restaurantes</p>
+      <a class="entry-header__link" href="./anterior.html">Ver diseño anterior</a>
     </div>
-    <nav class="venue-list" aria-label="Seleccionar restaurante">
-      <a class="venue venue--isabella" href="./isabella/" aria-label="Ver administración de Isabella's">
-        <span class="venue__art"><small>Carta y contenido</small><span class="venue__monogram" aria-hidden="true">I’</span></span>
-        <span class="venue__content"><span><h2>Isabella's</h2><p>Edición de la carta 2026, sus productos, categorías y fondos.</p><span class="venue__modules"><span>Productos</span><span>Categorías</span><span>Imágenes</span></span></span><span class="venue__arrow" aria-hidden="true">→</span></span>
+  </header>
+  <main class="entry-shell entry-main" id="contenido" tabindex="-1">
+    <div class="entry-intro">
+      <p class="entry-kicker">Acceso administrativo</p>
+      <h1>Selecciona un restaurante</h1>
+      <p>Entra al espacio de gestión de Isabella’s o Boccantina.</p>
+    </div>
+    <nav class="entry-options" aria-label="Restaurantes disponibles">
+      <a class="entry-option" href="./isabella/" aria-label="Ver la demostración de Isabella’s">
+        <span class="entry-option__logo entry-option__logo--isabella"><img src="./assets/isabella-logo-transparent.png" width="478" height="154" alt="" /></span>
+        <span class="entry-option__name">Isabella’s</span>
+        <span class="entry-option__description">Carta, productos, categorías e imágenes.</span>
+        <span class="entry-option__action">Ver Isabella’s <span aria-hidden="true">→</span></span>
       </a>
-      <a class="venue venue--boccantina" href="./boccantina/" aria-label="Ver administración de Boccantina">
-        <span class="venue__art"><small>Carta y operación</small><span class="venue__monogram" aria-hidden="true">B</span></span>
-        <span class="venue__content"><span><h2>Boccantina</h2><p>Configuración de extras y acceso a las vistas operativas de la demo.</p><span class="venue__modules"><span>Extras</span><span>Pedidos</span><span>Cocina</span><span>Reservaciones</span></span></span><span class="venue__arrow" aria-hidden="true">→</span></span>
+      <a class="entry-option" href="./boccantina/" aria-label="Ver la demostración de Boccantina">
+        <span class="entry-option__logo entry-option__logo--boccantina"><img src="./assets/boccantina-logo-transparent.png" width="401" height="98" alt="" /></span>
+        <span class="entry-option__name">Boccantina</span>
+        <span class="entry-option__description">Pedidos, cocina, mesas, reservas y extras.</span>
+        <span class="entry-option__action">Ver Boccantina <span aria-hidden="true">→</span></span>
       </a>
     </nav>
-    <aside class="note"><strong>Estado del preview</strong><p>Esta entrada reúne las administraciones existentes. Todavía no comparte usuarios ni datos entre restaurantes y no está conectada a producción.</p></aside>
+    <p class="entry-note">Entorno de demostración local. Los espacios de ambos restaurantes son independientes y no están conectados a producción.</p>
   </main>
 </body>
 </html>

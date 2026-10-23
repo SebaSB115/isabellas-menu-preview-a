@@ -1,6 +1,12 @@
 # Isabella's Costa Rica · Preview A de la carta
 
+**[Estado de la entrega del 23 de octubre de 2026](ESTADO_2026-10-23.md)**: alcance, comprobaciones y límites del preview.
+
+**Diseño predeterminado del preview local:** Isabella’s Journal en `http://127.0.0.1:4180/`. La carta editorial anterior sigue en `http://127.0.0.1:4180/borrador-1.html` como Borrador 1 en espera. La Central local y Journal comparten el catálogo de `/api/menu`; al guardar y volver a Journal se cargan los datos nuevos. La demo estática de GitHub Pages permanece independiente y este cambio no se ha publicado.
+
 Prototipo independiente de la web oficial. Combina las nueve páginas del menú 2026 de Isabella's con una carta de revista interactiva: ilustración sin texto a un lado y platos con precios al otro. Incluye búsqueda, navegación por categorías, animación de hoja, diseño adaptable y cinco idiomas. Árabe y hebreo usan lectura de derecha a izquierda.
+
+**Iteración visual local (20/10/2026):** portada de libro, índice de capítulos en escritorio y tipografía Fraunces de código abierto. El lector ajusta la ilustración y los platos para mostrar hoja y controles en una pantalla; al cambiar de página no desplaza el documento. La [dirección visual de ambas cartas](notes/direccion-visual-dos-cartas-2026-10-20.md) explica el criterio de marca y UX. Estos cambios aún no están publicados en el enlace de GitHub Pages.
 
 ## Ver el avance
 
@@ -8,9 +14,21 @@ Prototipo independiente de la web oficial. Combina las nueve páginas del menú 
 
 **[Abrir la demostración pública de la central](https://sebasb115.github.io/isabellas-menu-preview-a/admin/)**
 
-**[Elegir restaurante en la central compartida](https://sebasb115.github.io/isabellas-menu-preview-a/central/)**: entrada de demostración para Isabella's y Boccantina. Cada restaurante conserva sus propias vistas y datos; Boccantina aún tiene un editor de extras, no un editor general de productos. Esta entrada no implementa autenticación compartida ni Firebase.
+**[Elegir restaurante en la central compartida](https://sebasb115.github.io/isabellas-menu-preview-a/central/)**: entrada de demostración para Isabella's y Boccantina. Cada restaurante conserva sus propias vistas y datos; Boccantina aún tiene un editor de extras, no un editor general de productos. La versión publicada no incluye la nueva gestión privada de usuarios ni Firebase.
 
 La central publicada en GitHub Pages es una **demostración interactiva sin login**. Permite probar la edición, pero guarda los cambios solo en el navegador de quien la usa; no modifica la carta pública ni `isabellascr.com`. La contraseña y el servidor privado local no se publican. Se puede regenerar desde la interfaz privada con `npm.cmd run build:pages-admin`.
+
+### Acceso privado local por restaurante
+
+Inicia ambos servidores de preview: `npm.cmd run serve:preview-a` aquí (puerto 4180) y `npm.cmd run serve` en `../boccantina-preview` (puerto 4174). Abre **http://127.0.0.1:4180/central/** y elige Isabella's o Boccantina. Cada restaurante conserva su login y sesión; los enlaces directos también comprueban los permisos de la cuenta.
+
+El usuario propietario de Isabella's se configura con `npm.cmd run admin:setup`. Boccantina conserva su cuenta propietaria independiente, configurada desde su propio repositorio. Las contraseñas se guardan como hash fuera de Git. Este acceso es **local de preview**; GitHub Pages no ejecuta los servidores ni protege sus demos estáticas. Para acceso privado desde Internet harán falta backend alojado, HTTPS y almacenamiento persistente.
+
+### Usuarios y permisos en la central local
+
+La cuenta propietaria de Isabella's abre **Administración** desde el menú de su central de carta. Allí crea usuarios de Isabella's y les asigna `Productos` o `Categorías e imágenes`. La sesión y la API comprueban los permisos antes de permitir operaciones; desactivar una cuenta revoca su siguiente acceso.
+
+Los usuarios locales de Isabella's se guardan en `data/central-users.json`, fuera de Git. Para cambiar la ubicación, usa `ISABELLA_USERS_FILE`. La demo pública de GitHub Pages mantiene su comportamiento independiente y no muestra cuentas privadas.
 
 ## Investigación para la propuesta comercial
 

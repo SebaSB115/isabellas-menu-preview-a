@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="theme-color" content="#291b20">
+  <title>Administración · Personal — Isabella’s</title>
+  <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="./style.css">
+  <script src="./app.js" type="module"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Ir al contenido</a>
+  <div class="app-shell" id="app-shell">
+    <button class="sidebar-backdrop" id="sidebar-backdrop" type="button" aria-label="Cerrar menú de administración" tabindex="-1"></button>
+    <aside class="sidebar" id="admin-sidebar" aria-label="Navegación de la central" aria-hidden="true" inert>
+      <div class="sidebar-brand"><span class="monogram">I<span>’</span></span><div><strong>Isabella’s</strong><small>Central de carta</small></div><button class="sidebar-close" id="sidebar-close" type="button" aria-label="Cerrar menú">×</button></div>
+      <div class="sidebar-divider"></div><p class="sidebar-caption">Administración</p>
+      <nav class="main-nav" aria-label="Secciones"><a class="sidebar-staff-link" href="../#productos"><span class="nav-symbol" aria-hidden="true">◈</span> Productos</a><a class="sidebar-staff-link" href="../#categorias"><span class="nav-symbol" aria-hidden="true">▤</span> Categorías</a><a class="sidebar-staff-link is-active" href="./" aria-current="page"><span class="nav-symbol" aria-hidden="true">◦</span> Administración</a></nav>
+      <div class="sidebar-foot"><span class="online-dot"></span> Vista previa local<br><small>Los cambios se guardan en este equipo.</small></div>
+    </aside>
+    <div class="workspace"><header class="topbar"><div class="topbar-start"><button class="sidebar-toggle" id="sidebar-toggle" type="button" aria-controls="admin-sidebar" aria-expanded="false"><span class="sidebar-toggle__icon" aria-hidden="true"><i></i><i></i><i></i></span> Menú</button><div class="breadcrumbs"><a href="../../central/">Restaurantes</a> <span>/</span> Isabella’s <span>/</span> <strong>Administración</strong></div></div><div class="top-actions"><a href="../../" target="_blank" rel="noopener noreferrer">Ver carta ↗</a><button id="logout" type="button">Salir</button></div></header>
+      <main id="main" tabindex="-1"><div class="page-heading"><div><p class="overline">Dirección del restaurante</p><h1>Administración</h1><p>Gestiona las cuentas y las vistas de trabajo de Isabella’s.</p></div></div>
+        <section class="people-section" aria-labelledby="people-title"><div class="people-head"><div><h2 id="people-title">Personal</h2><p>Asigna a cada persona únicamente las vistas que necesita.</p></div><button class="primary-button" id="new-user" type="button">+ Nuevo usuario</button></div><p id="feedback" role="status" aria-live="polite"></p><div class="people-table-wrap"><table><thead><tr><th scope="col">Nombre</th><th scope="col">Usuario</th><th scope="col">Vistas permitidas</th><th scope="col">Estado</th><th scope="col"><span class="sr-only">Acciones</span></th></tr></thead><tbody id="user-rows"></tbody></table></div></section>
+      </main>
+    </div>
+  </div>
+  <dialog id="user-dialog" aria-labelledby="dialog-title"><form id="user-form"><div class="dialog-head"><div><p class="overline">Accesos del equipo</p><h2 id="dialog-title">Nuevo usuario</h2></div><button class="dialog-close" type="button" data-close aria-label="Cerrar formulario">×</button></div><div class="dialog-body"><div class="dialog-fields"><label>Nombre visible<input name="name" autocomplete="name" required minlength="2" maxlength="80"></label><label>Usuario<input name="username" autocomplete="off" required minlength="3" maxlength="40" pattern="[A-Za-z0-9._-]+" aria-describedby="username-help"><small id="username-help">3 a 40 caracteres: letras, números, punto, guion o guion bajo.</small></label></div><label>Contraseña<input name="password" type="password" autocomplete="new-password" minlength="8" maxlength="256" aria-describedby="password-help"><small id="password-help">Mínimo 8 caracteres. Al editar, déjala vacía para conservarla.</small></label><fieldset><legend>Vistas de Isabella’s</legend><div id="permission-options"></div></fieldset><label class="active-label"><input name="active" type="checkbox" checked> Cuenta activa</label><p id="form-error" role="alert" aria-live="polite"></p></div><div class="dialog-actions"><button class="secondary-button" type="button" data-close>Cancelar</button><button class="primary-button" id="save-user" type="submit">Crear usuario</button></div></form></dialog>
+</body>
+</html>
