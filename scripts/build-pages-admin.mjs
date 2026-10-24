@@ -25,7 +25,7 @@ html = replaceOnce(html, '<div class="app-shell" id="app-shell" hidden>', '<div 
 html = replaceOnce(html, '<span class="online-dot"></span> Vista previa local<br /><small>Los cambios se guardan en este equipo.</small>', '<span class="online-dot"></span> Demo pública<br /><small>Los cambios solo viven en este navegador.</small>');
 html = replaceOnce(html, '<button id="logout" type="button">Salir</button>', '<button id="reset-demo" type="button">Restablecer demo</button>');
 html = html.replace(/\s*<a id="staff-link"[^>]*>.*?<\/a>/, '');
-html = replaceOnce(html, '      <main id="main" tabindex="-1">', '      <div class="demo-banner" role="note"><strong>Demostración de la central</strong><span>Puedes probar la edición. Los cambios se guardan solo en este navegador; no modifican el menú público ni la web oficial. La traducción automática y el acceso privado requieren la integración final.</span></div>\n      <main id="main" tabindex="-1">');
+html = replaceOnce(html, '      <main id="main" tabindex="-1">', '      <div class="demo-banner" role="note"><strong>Demostración de la central</strong><span>Puedes probar la edición y ver los cambios en Isabella’s Journal desde este mismo navegador. No se comparten con otros dispositivos ni modifican la web oficial. La traducción automática y el acceso privado requieren la integración final.</span></div>\n      <main id="main" tabindex="-1">');
 html = replaceOnce(html, 'Carta 2026 · control editorial', 'Carta 2026 · demostración editorial');
 
 let css = (await readFile(resolve(source, 'style.css'), 'utf8')).replace(/\r\n/g, '\n');
