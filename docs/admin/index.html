@@ -13,7 +13,26 @@
 </head>
 <body>
   <a class="skip-link" href="#main">Ir al contenido</a>
-  <div class="app-shell" id="app-shell">
+  <section class="login-screen admin-entry entry-page" id="login-screen" hidden>
+    <div class="entry-login" id="acceso" tabindex="-1">
+      <a class="entry-back return-link" href="../central/">← Cambiar restaurante</a>
+      <div class="entry-login__body">
+        <div class="entry-brand">
+          <span class="entry-brand__logo entry-brand__logo--isabella"><img src="../central/assets/isabella-logo-transparent.png" alt="Isabella’s" width="478" height="154" /></span>
+        </div>
+        <h1 class="entry-kicker">ACCESO DE DEMOSTRACIÓN</h1>
+        <form class="entry-form" id="login-form">
+          <div class="entry-field"><label for="username">Usuario</label><input id="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required maxlength="80" /></div>
+          <div class="entry-field"><label for="password">Contraseña</label><div class="entry-password"><input id="password" type="password" autocomplete="current-password" required /><button id="toggle-password" type="button" aria-controls="password" aria-pressed="false">Mostrar</button></div></div>
+          <button class="entry-button" type="submit">Entrar a Isabella’s</button>
+        </form>
+        <p class="entry-error" id="login-message" role="alert" aria-live="polite"></p>
+        <p class="entry-foot">Demo pública sin autenticación real. Usuario: <strong>demo-isabella</strong> · Contraseña: <strong>vista2026</strong>. Los datos quedan en este navegador.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="app-shell" id="app-shell" hidden>
     <button class="sidebar-backdrop" id="sidebar-backdrop" type="button" aria-label="Cerrar menú de administración" tabindex="-1"></button>
     <aside class="sidebar" id="admin-sidebar" aria-label="Navegación de la central" aria-hidden="true" inert>
       <div class="sidebar-brand"><span class="monogram">I<span>’</span></span><div><strong>Isabella's</strong><small>Central de carta</small></div><button class="sidebar-close" id="sidebar-close" type="button" aria-label="Cerrar menú">×</button></div>
@@ -27,7 +46,7 @@
     </aside>
 
     <div class="workspace">
-      <header class="topbar"><div class="topbar-start"><button class="sidebar-toggle" id="sidebar-toggle" type="button" aria-controls="admin-sidebar" aria-expanded="false"><span class="sidebar-toggle__icon" aria-hidden="true"><i></i><i></i><i></i></span> Menú</button><div class="breadcrumbs"><a href="../central/">Restaurantes</a> <span>/</span> Isabella's <span>/</span> <strong id="breadcrumb-current">Productos</strong></div></div><div class="top-actions"><a href="../" target="_blank" rel="noopener noreferrer">Ver carta <span aria-hidden="true">↗</span></a><button id="reset-demo" type="button">Restablecer demo</button></div></header>
+      <header class="topbar"><div class="topbar-start"><button class="sidebar-toggle" id="sidebar-toggle" type="button" aria-controls="admin-sidebar" aria-expanded="false"><span class="sidebar-toggle__icon" aria-hidden="true"><i></i><i></i><i></i></span> Menú</button><div class="breadcrumbs"><a href="../central/">Restaurantes</a> <span>/</span> Isabella's <span>/</span> <strong id="breadcrumb-current">Productos</strong></div></div><div class="top-actions"><a href="../" target="_blank" rel="noopener noreferrer">Ver carta <span aria-hidden="true">↗</span></a><button id="reset-demo" type="button">Restablecer demo</button><button id="logout" type="button">Salir</button></div></header>
       <div class="demo-banner" role="note"><strong>Demostración de la central</strong><span>Puedes probar la edición y ver los cambios en Isabella’s Journal desde este mismo navegador. No se comparten con otros dispositivos ni modifican la web oficial. La traducción automática y el acceso privado requieren la integración final.</span></div>
       <main id="main" tabindex="-1">
         <div class="page-heading"><div><p class="overline">Carta 2026 · demostración editorial</p><h1 id="page-title" tabindex="-1">Productos</h1><p id="page-description">Precios, textos y disponibilidad de la carta.</p></div><button class="primary-button" id="new-button" type="button">+ Nuevo producto</button></div>

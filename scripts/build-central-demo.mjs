@@ -12,23 +12,21 @@ const index = resolve(target, 'index.html');
 let html = await readFile(index, 'utf8');
 html = html.replace('Vista de diseño', 'Vista de demostración')
   .replace(/\s*<a class="access-link" href="\.\/usuarios\/">Gestionar accesos<\/a>/, '')
-  .replace('Entrar a Isabella’s', 'Ver Isabella’s')
-  .replace('Entrar a Boccantina', 'Ver Boccantina')
-  .replace('aria-label="Entrar a la administración de Isabella’s"', 'aria-label="Ver la demostración de Isabella’s"')
-  .replace('aria-label="Entrar a la administración de Boccantina"', 'aria-label="Ver la demostración de Boccantina"')
+  .replace('href="./isabella/"', 'href="../admin/"')
+  .replace('href="./boccantina/"', 'href="https://sebasb115.github.io/boccantina-preview/admin/login/"')
+  .replace('aria-label="Entrar a la administración de Isabella’s"', 'aria-label="Abrir el acceso de demostración de Isabella’s"')
+  .replace('aria-label="Entrar a la administración de Boccantina"', 'aria-label="Abrir el acceso de demostración de Boccantina"')
   .replace('Entorno de demostración local. Los espacios de ambos restaurantes son independientes y no están conectados a producción.', 'Demostración pública. Cada restaurante conserva sus datos de prueba en este navegador; ninguno está conectado a producción.');
 await writeFile(index, html);
 
 const isabella = resolve(target, 'isabella', 'index.html');
-let isabellaHtml = await readFile(isabella, 'utf8');
-isabellaHtml = isabellaHtml.replace('La versión pública es una demo aislada; sus ediciones no actualizan la carta pública ni la web oficial.', 'En la demo pública, las ediciones se reflejan en Journal dentro de este navegador; no se comparten con otros dispositivos ni modifican la web oficial.');
-await writeFile(isabella, isabellaHtml);
+const redirectPage = (destination, restaurant) => `<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><meta http-equiv="refresh" content="0;url=${destination}"><title>Acceso de demostración · ${restaurant}</title></head><body><main><p>Abriendo el acceso de demostración de ${restaurant}…</p><a href="${destination}">Ir al acceso de demostración</a></main></body></html>
+`;
+await writeFile(isabella, redirectPage('../../admin/', 'Isabella’s'));
 
 const boccantina = resolve(target, 'boccantina', 'index.html');
-let boccantinaHtml = await readFile(boccantina, 'utf8');
-boccantinaHtml = boccantinaHtml.replace('https://sebasb115.github.io/boccantina-preview/?admin=extras', 'https://sebasb115.github.io/boccantina-preview/admin/extras/')
-  .replace("Boccantina todavía tiene un editor de extras, no un editor general de productos como Isabella's. Los enlaces abren la demo pública de Boccantina y no modifican su web oficial.", 'Las herramientas de Boccantina se muestran en su propia demo. Los datos de prueba quedan en el navegador y no modifican la web oficial.');
-await writeFile(boccantina, boccantinaHtml);
+await writeFile(boccantina, redirectPage('https://sebasb115.github.io/boccantina-preview/admin/login/', 'Boccantina'));
 const previous = resolve(target, 'anterior.html');
 let previousHtml = await readFile(previous, 'utf8');
 previousHtml = previousHtml.replace('Acceso privado · preview local', 'Vista de demostración')

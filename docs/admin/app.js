@@ -33,7 +33,8 @@ function notice(message, error = false) {
   $('notice').hidden = false;
   if (!error) noticeTimer = setTimeout(() => { $('notice').hidden = true; }, 5500);
 }
-function showApp() { $('app-shell').hidden = false; render(); }
+function showLogin() { $('login-screen').hidden = false; $('app-shell').hidden = true; document.querySelector('.skip-link').href = '#acceso'; }
+function showApp() { permissions = ['isabella.products', 'isabella.categories']; $('login-screen').hidden = true; $('app-shell').hidden = false; document.querySelector('.skip-link').href = '#main'; render(); }
 function guard() { return !dirty || confirm('Hay cambios sin guardar. ¿Descartarlos?'); }
 function currentCategory() { return catalog.categories.find(category => category.id === selectedCategory); }
 function currentProduct() { return catalog.categories.flatMap(category => category.items).find(item => item.id === selectedProduct); }
@@ -301,6 +302,33 @@ function updateArtPreview() {
   $('focus-y-value').textContent = `${$('focus-y').value}%`;
 }
 
+const demoAccessKey = 'isabella.github-pages.demo-access.v1';
+const demoUsername = 'demo-isabella';
+const demoPassword = 'vista2026';
+$('login-form').addEventListener('submit', async event => {
+  event.preventDefault(); $('login-message').textContent = '';
+  if ($('username').value.trim().toLowerCase() !== demoUsername || $('password').value !== demoPassword) {
+    $('login-message').textContent = 'Usuario o contraseña de demostración incorrectos.';
+    $('password').focus(); return;
+  }
+  try {
+    catalog = await api('/api/admin/menu');
+    selectedCategory = catalog.categories[0]?.id || null;
+    selectedProduct = catalog.categories.flatMap(category => category.items)[0]?.id || null;
+    sessionStorage.setItem(demoAccessKey, '1');
+    $('password').value = ''; showApp();
+  } catch (error) { $('login-message').textContent = error.message; }
+});
+$('toggle-password').addEventListener('click', () => {
+  const visible = $('password').type === 'password';
+  $('password').type = visible ? 'text' : 'password';
+  $('toggle-password').textContent = visible ? 'Ocultar' : 'Mostrar';
+  $('toggle-password').setAttribute('aria-pressed', String(visible));
+});
+$('logout').addEventListener('click', () => {
+  if (!guard()) return;
+  sessionStorage.removeItem(demoAccessKey); catalog = null; dirty = false; showLogin(); $('username').focus();
+});
 $('reset-demo').addEventListener('click', () => {
   if (!guard() || !confirm('¿Restablecer todos los cambios de esta demostración en este navegador?')) return;
   resetDemo(); location.reload();
@@ -456,9 +484,11 @@ $('editor-panel').addEventListener('click', async event => {
 });
 window.addEventListener('beforeunload', event => { if (dirty) { event.preventDefault(); event.returnValue = ''; } });
 
-try {
-  catalog = await api('/api/admin/menu');
-  selectedCategory = catalog.categories[0]?.id || null;
-  selectedProduct = catalog.categories.flatMap(category => category.items)[0]?.id || null;
-  showApp();
-} catch (error) { notice(error.message, true); }
+if (sessionStorage.getItem(demoAccessKey) === '1') {
+  try {
+    catalog = await api('/api/admin/menu');
+    selectedCategory = catalog.categories[0]?.id || null;
+    selectedProduct = catalog.categories.flatMap(category => category.items)[0]?.id || null;
+    showApp();
+  } catch { showLogin(); }
+} else showLogin();
