@@ -1,111 +1,13 @@
-<!doctype html>
-<html lang="es" dir="ltr">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="robots" content="noindex, nofollow" />
-    <meta name="theme-color" content="#211818" />
-    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
-    <title>Isabella's · Menú 2026 · Preview A</title>
-    <script src="./locale-bootstrap.js"></script>
-    <link rel="preload" href="./assets/menu-2026/NEW-MENU-COVER-ISA-2026-A.webp" as="image" type="image/webp" />
-    <link rel="preload" href="./assets/fonts/fraunces-latin.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="stylesheet" href="./style.css" />
-    <link rel="stylesheet" href="./brand-refresh.css" />
-    <script type="module" src="./app.js"></script>
-  </head>
-  <body>
-    <a class="skip-link" href="#menu-content" id="skip-link">Saltar al menú</a>
-    <div class="preview-ribbon"><span class="preview-dot"></span><span id="preview-label">Vista previa A · Isabella's</span></div>
-    <header class="site-header">
-      <a class="brand" href="#inicio">
-        <span class="brand-main">Isabella<span class="brand-apostrophe">’</span>s</span>
-        <span class="brand-sub">Pizzería &amp; Wine Bar</span>
-      </a>
-      <nav class="header-nav" aria-label="Navegación principal">
-        <a href="#menu" id="nav-menu">El menú</a>
-        <a href="#about" id="nav-about">Origen</a>
-      </nav>
-      <div class="language-control">
-        <label for="language-select" id="language-label">Idioma</label>
-        <select id="language-select" name="language">
-          <option value="es">Español</option>
-          <option value="en">English</option>
-          <option value="de">Deutsch</option>
-          <option value="ar">العربية</option>
-          <option value="he">עברית</option>
-        </select>
-      </div>
-    </header>
-
-    <main>
-      <section class="hero" id="inicio" aria-labelledby="hero-title">
-        <div class="hero-copy">
-          <span class="ornament" aria-hidden="true">✦</span>
-          <p class="hero-kicker" id="hero-kicker">La carta de Isabella’s</p>
-          <h1 id="hero-title">Un gusto por quedarse.</h1>
-          <p class="hero-description" id="hero-description">Sabores italianos, mesa compartida y buenos momentos. Descubre nuestra carta a tu ritmo.</p>
-          <a class="primary-link" href="#menu" id="hero-cta">Explorar el menú <span aria-hidden="true">↗</span></a>
-          <p class="hero-source" id="hero-source">Basado en el menú oficial de 2026.</p>
-        </div>
-        <div class="hero-image-wrap" aria-hidden="true">
-          <img class="hero-image" src="./assets/menu-2026/NEW-MENU-COVER-ISA-2026-A.webp" alt="" width="912" height="1167" />
-          <span class="image-corner corner-top"></span>
-          <span class="image-corner corner-bottom"></span>
-        </div>
-      </section>
-
-      <section class="menu-section" id="menu" aria-labelledby="menu-title">
-        <div class="section-heading">
-          <div>
-            <span class="ornament ornament-small" aria-hidden="true">✦</span>
-            <h2 id="menu-title">Nuestra carta</h2>
-            <p id="menu-subtitle">Elige una categoría o busca un plato.</p>
-          </div>
-          <p class="menu-edition" id="menu-edition">Edición 2026</p>
-        </div>
-        <div class="menu-toolbar">
-          <label class="search-field" for="menu-search">
-            <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="10.8" cy="10.8" r="6.8" stroke="currentColor" stroke-width="1.6"/><path d="m16 16 5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-            <span class="sr-only" id="search-label">Buscar platos</span>
-            <input id="menu-search" type="search" placeholder="Buscar platos o ingredientes" autocomplete="off" />
-          </label>
-          <span class="result-count" id="result-count" aria-live="polite"></span>
-        </div>
-        <div class="menu-layout" id="menu-content">
-          <aside class="category-sidebar" aria-labelledby="category-title">
-            <h3 id="category-title">Categorías</h3>
-            <nav id="category-nav" aria-label="Categorías del menú"></nav>
-          </aside>
-          <div class="reader-shell" id="magazine-reader" role="region" tabindex="-1">
-            <div class="reader-overline"><span id="reader-kicker">Una carta para hojear</span><span id="reader-counter" dir="ltr"></span></div>
-            <span class="sr-only" id="reader-announcement" aria-live="polite"></span>
-            <div class="menu-list" id="menu-list"></div>
-            <div class="reader-controls" id="reader-controls">
-              <button class="reader-button" id="reader-prev" type="button"><span aria-hidden="true" class="reader-arrow">←</span><span id="reader-prev-text">Anterior</span></button>
-              <div class="reader-progress" aria-hidden="true"><span id="reader-progress-fill"></span></div>
-              <button class="reader-button" id="reader-next" type="button"><span id="reader-next-text">Siguiente</span><span aria-hidden="true" class="reader-arrow">→</span></button>
-            </div>
-            <p class="reader-hint" id="reader-hint">Desliza o usa las flechas para pasar las páginas.</p>
-          </div>
-        </div>
-      </section>
-
-      <section class="about-section" id="about" aria-labelledby="about-title">
-        <span class="ornament ornament-small" aria-hidden="true">✦</span>
-        <div>
-          <h2 id="about-title">El menú de Isabella’s, en tu idioma.</h2>
-          <p id="about-copy">La página ilustrada conserva el arte sin texto ni precios. La página de lectura muestra los platos y precios del menú oficial de Isabella’s Costa Rica; los importes ausentes quedan pendientes.</p>
-          <p id="service-note">Los precios incluyen el impuesto de venta. No incluyen 10 % de servicio.</p>
-          <details class="source-pages">
-            <summary id="source-pages-summary">Comparar las nueve páginas originales</summary>
-            <p id="source-pages-note">Las imágenes originales están en español.</p>
-            <div class="source-pages-grid" id="source-pages-grid"></div>
-          </details>
-        </div>
-        <a id="source-link" href="https://isabellascr.com/#menu" target="_blank" rel="noopener noreferrer">Ver menú original <span aria-hidden="true">↗</span></a>
-      </section>
-    </main>
-    <footer class="site-footer"><span>Isabella’s Costa Rica</span><span id="footer-note">Carta de consulta · Sin pedidos en línea</span></footer>
-  </body>
+﻿<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Isabella’s Journal · Carta de consulta</title>
+  <script src="./entry.js" defer></script>
+</head>
+<body>
+  <p>Abre la <a href="./design-lab/journal.html">carta Isabella’s Journal</a>.</p>
+</body>
 </html>

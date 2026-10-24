@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="es" dir="ltr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="theme-color" content="#f1e4d1" />
+  <title>Isabella’s Journal · Carta de consulta</title>
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+  <link rel="preload" href="../assets/fonts/fraunces-latin.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="./style.css" />
+  <link rel="stylesheet" href="./journal-pages.css" />
+  <script type="module" src="./app.js"></script>
+</head>
+<body data-proposal="journal">
+  <a class="skip-link" href="#viewer">Saltar al contenido</a>
+  <div class="lab-notice"><span>Demo pública · no producción</span><span>Isabella’s Journal · diseño actual</span></div>
+  <header class="lab-header">
+    <a class="lab-logo" href="?view=cover" aria-label="Isabella’s · portada"><img src="../central/assets/isabella-logo-transparent.png" alt="Isabella’s · Pizzería & Wine Bar" width="264" height="100" /></a>
+    <nav class="lab-links" aria-label="Otras versiones de la carta"><a href="./il-libro.html">Ver Il Libro</a><a href="../borrador-1.html">Borrador 1</a></nav>
+    <label class="language-field"><span id="language-label">Idioma</span><select id="language-select" aria-labelledby="language-label"><option value="es">Español</option><option value="en">English</option><option value="de">Deutsch</option><option value="ar">العربية</option><option value="he">עברית</option></select></label>
+  </header>
+  <main class="lab-main" id="main">
+    <div class="chapter-toolbar"><p class="chapter-toolbar__label" id="chapters-label">Índice de la carta</p><nav class="chapter-nav" id="chapter-nav" aria-label="Categorías"></nav><label class="chapter-select-wrap"><span class="sr-only" id="chapter-select-label">Elegir categoría</span><select id="chapter-select" aria-labelledby="chapter-select-label"></select></label></div>
+    <div class="viewer" id="viewer" aria-live="polite"></div>
+    <nav class="page-controls" id="page-controls" aria-label="Páginas y categorías"><button type="button" id="page-prev"><span aria-hidden="true">←</span> <span id="page-prev-label">Anterior</span></button><span class="page-position" id="page-position" aria-live="polite"></span><button type="button" id="page-next"><span id="page-next-label">Siguiente</span> <span aria-hidden="true">→</span></button></nav>
+  </main>
+  <footer class="lab-footer"><span>Isabella’s · Menú 2026</span><span id="service-note">Precios en colones. Incluyen impuestos; no incluyen 10 % de servicio.</span><span id="preview-note">Carta de consulta · sin pedidos ni pagos.</span><a id="photo-credits" href="./photo-credits.html">Fotografías de referencia y créditos</a></footer>
+</body>
+</html>

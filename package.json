@@ -7,6 +7,7 @@
   "scripts": {
     "serve:preview-a": "node scripts/serve-preview-a-admin.mjs",
     "build:pages-admin": "node scripts/build-pages-admin.mjs",
+    "build:pages-journal": "node scripts/build-pages-journal.mjs",
     "build:central": "node scripts/build-central-demo.mjs",
     "admin:setup": "node scripts/setup-menu-admin.mjs",
     "translate:setup": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup-translation.ps1",

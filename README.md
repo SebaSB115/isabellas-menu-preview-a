@@ -2,11 +2,11 @@
 
 **[Estado de la entrega del 23 de octubre de 2026](ESTADO_2026-10-23.md)**: alcance, comprobaciones y límites del preview.
 
-**Diseño predeterminado del preview local:** Isabella’s Journal en `http://127.0.0.1:4180/`. La carta editorial anterior sigue en `http://127.0.0.1:4180/borrador-1.html` como Borrador 1 en espera. La Central local y Journal comparten el catálogo de `/api/menu`; al guardar y volver a Journal se cargan los datos nuevos. La demo estática de GitHub Pages permanece independiente y este cambio no se ha publicado.
+**Diseño predeterminado:** Isabella’s Journal en el preview local y en la demo pública de GitHub Pages. La carta editorial anterior sigue accesible como `borrador-1.html` (Borrador 1). La Central privada local y Journal comparten el catálogo de `/api/menu`; la demo pública comparte sus cambios solo entre el editor y Journal del mismo navegador mediante almacenamiento local.
 
 Prototipo independiente de la web oficial. Combina las nueve páginas del menú 2026 de Isabella's con una carta de revista interactiva: ilustración sin texto a un lado y platos con precios al otro. Incluye búsqueda, navegación por categorías, animación de hoja, diseño adaptable y cinco idiomas. Árabe y hebreo usan lectura de derecha a izquierda.
 
-**Iteración visual local (20/10/2026):** portada de libro, índice de capítulos en escritorio y tipografía Fraunces de código abierto. El lector ajusta la ilustración y los platos para mostrar hoja y controles en una pantalla; al cambiar de página no desplaza el documento. La [dirección visual de ambas cartas](notes/direccion-visual-dos-cartas-2026-10-20.md) explica el criterio de marca y UX. Estos cambios aún no están publicados en el enlace de GitHub Pages.
+**Iteración visual (20/10/2026):** portada de libro, índice de capítulos en escritorio y tipografía Fraunces de código abierto. El lector ajusta la ilustración y los platos para mostrar hoja y controles en una pantalla; al cambiar de página no desplaza el documento. La [dirección visual de ambas cartas](notes/direccion-visual-dos-cartas-2026-10-20.md) explica el criterio de marca y UX.
 
 ## Ver el avance
 
@@ -16,7 +16,7 @@ Prototipo independiente de la web oficial. Combina las nueve páginas del menú 
 
 **[Elegir restaurante en la central compartida](https://sebasb115.github.io/isabellas-menu-preview-a/central/)**: entrada de demostración para Isabella's y Boccantina. Cada restaurante conserva sus propias vistas y datos; Boccantina aún tiene un editor de extras, no un editor general de productos. La versión publicada no incluye la nueva gestión privada de usuarios ni Firebase.
 
-La central publicada en GitHub Pages es una **demostración interactiva sin login**. Permite probar la edición, pero guarda los cambios solo en el navegador de quien la usa; no modifica la carta pública ni `isabellascr.com`. La contraseña y el servidor privado local no se publican. Se puede regenerar desde la interfaz privada con `npm.cmd run build:pages-admin`.
+La central publicada en GitHub Pages es una **demostración interactiva sin login**. Permite probar la edición y ver el resultado en Journal dentro del mismo navegador; esos cambios no llegan a otros visitantes ni a `isabellascr.com`. La contraseña y el servidor privado local no se publican. El editor y la carta estáticos se generan con `npm.cmd run build:pages-admin` y `npm.cmd run build:pages-journal`.
 
 ### Acceso privado local por restaurante
 
