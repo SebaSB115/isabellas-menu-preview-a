@@ -46,6 +46,9 @@ try {
   assert.equal((await request('/api/admin/menu')).response.status, 401);
   assert.equal((await request('/api/admin/menu', { method:'PUT', body:'{}' })).response.status, 401);
   assert.equal((await request('/central/isabella/', { redirect:'manual' })).response.status, 303);
+  const boccantinaEntry = await request('/central/boccantina/', { redirect:'manual' });
+  assert.equal(boccantinaEntry.response.status, 303);
+  assert.equal(boccantinaEntry.response.headers.get('location'), `http://127.0.0.1:${Number(process.env.BOCCANTINA_V2_PORT) || 4175}/admin/login/`);
   assert.equal((await request('/api/admin/login', { method:'POST', body:JSON.stringify({ username:'isabella-admin', password:'wrong' }) })).response.status, 401);
   assert.equal((await request('/api/admin/login', { method:'POST', body:JSON.stringify({ username:'boccantina-admin', password }) })).response.status, 401);
   const login = await request('/api/admin/login', { method:'POST', body:JSON.stringify({ username:'isabella-admin', password }) });

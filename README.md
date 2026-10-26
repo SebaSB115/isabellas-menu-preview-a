@@ -20,7 +20,9 @@ La central publicada en GitHub Pages empieza en un **login de demostración** (`
 
 ### Acceso privado local por restaurante
 
-Inicia ambos servidores de preview: `npm.cmd run serve:preview-a` aquí (puerto 4180) y `npm.cmd run serve` en `../boccantina-preview` (puerto 4174). Abre **http://127.0.0.1:4180/central/** y elige Isabella's o Boccantina. Cada restaurante conserva su login y sesión; los enlaces directos también comprueban los permisos de la cuenta.
+En la rama `version/2-simple`, inicia `npm.cmd run serve:preview-a` aquí (puerto 4180) y `npm.cmd run serve:v2` en `../boccantina-preview` (puerto 4175). Abre **http://127.0.0.1:4180/central/** y elige Isabella's o Boccantina. La opción de Boccantina abre el login de V2; cada restaurante conserva su propia sesión.
+
+Para revisión desde otro equipo, el selector V2 de demostración se publica desde el repositorio hermano en <https://sebasb115.github.io/boccantina-preview/central/>. Isabella's abre su demo pública existente y Boccantina abre su demo V2. Ninguna de esas pantallas está conectada al servidor privado ni a los datos de producción.
 
 El usuario propietario de Isabella's se configura con `npm.cmd run admin:setup`. Boccantina conserva su cuenta propietaria independiente, configurada desde su propio repositorio. Las contraseñas se guardan como hash fuera de Git. Este acceso es **local de preview**; GitHub Pages no ejecuta los servidores ni protege sus demos estáticas. Para acceso privado desde Internet harán falta backend alojado, HTTPS y almacenamiento persistente.
 

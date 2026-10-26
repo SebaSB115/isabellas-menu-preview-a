@@ -226,7 +226,7 @@ async function handle(request, response) {
       response.writeHead(303, headers({ location:'/admin/', 'cache-control':'no-store' })); response.end(); return;
     }
     if ((path === '/central/boccantina/' || path === '/central/boccantina/index.html')) {
-      response.writeHead(303, headers({ location:`http://127.0.0.1:${Number(process.env.BOCCANTINA_PREVIEW_PORT) || 4174}/admin/login/?next=%2Fadmin%2Fpedidos%2F&central_port=${port}`, 'cache-control':'no-store' })); response.end(); return;
+      response.writeHead(303, headers({ location:`http://127.0.0.1:${Number(process.env.BOCCANTINA_V2_PORT) || 4175}/admin/login/`, 'cache-control':'no-store' })); response.end(); return;
     }
     const directoryPath = `${path}/`;
     if (directoryPages.has(directoryPath)) { response.writeHead(308, headers({ location:directoryPath })); response.end(); return; }
