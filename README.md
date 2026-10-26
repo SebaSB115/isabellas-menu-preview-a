@@ -14,7 +14,7 @@ Prototipo independiente de la web oficial. Combina las nueve páginas del menú 
 
 **[Abrir la demostración pública de la central](https://sebasb115.github.io/isabellas-menu-preview-a/admin/)**
 
-**[Elegir restaurante en la central compartida](https://sebasb115.github.io/isabellas-menu-preview-a/central/)**: entrada de demostración para Isabella's y Boccantina. Cada restaurante conserva sus propias vistas y datos; Boccantina aún tiene un editor de extras, no un editor general de productos. La versión publicada no incluye la nueva gestión privada de usuarios ni Firebase.
+**[Elegir restaurante en la central compartida](https://sebasb115.github.io/isabellas-menu-preview-a/central/)**: entrada de demostración de la versión 2 para Isabella's y Boccantina. Cada restaurante conserva sus propias vistas y datos. Boccantina permite probar productos, categorías y disponibilidad; la demo pública no incluye autenticación privada real ni Firebase.
 
 La central publicada en GitHub Pages empieza en un **login de demostración** (`demo-isabella` / `vista2026`). Es una pantalla de acceso visual, no autenticación real ni control de permisos del servidor: los archivos estáticos siguen siendo públicos. Permite probar la edición y ver el resultado en Journal dentro del mismo navegador; esos cambios no llegan a otros visitantes ni a `isabellascr.com`. La contraseña y el servidor privado local no se publican. El editor y la carta estáticos se generan con `npm.cmd run build:pages-admin` y `npm.cmd run build:pages-journal`.
 
@@ -22,7 +22,7 @@ La central publicada en GitHub Pages empieza en un **login de demostración** (`
 
 En la rama `version/2-simple`, inicia `npm.cmd run serve:preview-a` aquí (puerto 4180) y `npm.cmd run serve:v2` en `../boccantina-preview` (puerto 4175). Abre **http://127.0.0.1:4180/central/** y elige Isabella's o Boccantina. La opción de Boccantina abre el login de V2; cada restaurante conserva su propia sesión.
 
-Para revisión desde otro equipo, el selector V2 de demostración se publica desde el repositorio hermano en <https://sebasb115.github.io/boccantina-preview/central/>. Isabella's abre su demo pública existente y Boccantina abre su demo V2. Ninguna de esas pantallas está conectada al servidor privado ni a los datos de producción.
+Para revisión desde otro equipo, el selector V2 de demostración se publica en <https://sebasb115.github.io/boccantina-preview/central/>. La página pública de Isabella's se genera desde `version/2-simple/docs` y Boccantina publica `version/2-simple/docs-v2`. Ambas abren sus logins de demostración. Ninguna de esas pantallas está conectada al servidor privado ni a los datos de producción.
 
 El usuario propietario de Isabella's se configura con `npm.cmd run admin:setup`. Boccantina conserva su cuenta propietaria independiente, configurada desde su propio repositorio. Las contraseñas se guardan como hash fuera de Git. Este acceso es **local de preview**; GitHub Pages no ejecuta los servidores ni protege sus demos estáticas. Para acceso privado desde Internet harán falta backend alojado, HTTPS y almacenamiento persistente.
 
