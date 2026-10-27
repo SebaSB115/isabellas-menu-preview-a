@@ -1,3 +1,4 @@
+import { installPageSwipe } from './journal-swipe.js';
 const escape = value => String(value ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const $=id=>document.getElementById(id);
 export function preferredLanguage(query) {
@@ -25,15 +26,7 @@ export function journalExperience({getLanguage, changeLanguage, getItems, move, 
     dialog.innerHTML=`<header><span>Isabella’s</span><button type="button" data-close-dish>${en?'← Back to menu':'← Volver a la carta'}</button></header><div class="dish-detail-body">${photo?`<figure><img src="${escape(photo)}" alt="${escape(tx(item.name))}" style="object-position:${Number(item.photo.x)||50}% ${Number(item.photo.y)||50}%"></figure>`:''}<section><p class="small-kicker">${en?'From our kitchen':'De nuestra cocina'}</p><h1 id="dish-detail-title">${escape(tx(item.name))}</h1><p class="dish-detail-description">${escape(tx(item.description))}</p>${item.options?.length?`<dl>${item.options.map(o=>`<div><dt>${escape(tx(o.label))}</dt><dd>${priceMarkup(o.price)}</dd></div>`).join('')}</dl>`:priceMarkup(item.price)}${item.addon?`<dl><div><dt>${escape(tx(item.addon.label))}</dt><dd>${priceMarkup(item.addon.price)}</dd></div></dl>`:''}${item.available===false?`<p class="dish-unavailable">${en?'Temporarily unavailable':'No disponible hoy'}</p>`:''}</section></div>`;
     dialog.showModal();document.body.classList.add('dish-open');
   });
-  let touch=null;
-  $('viewer').addEventListener('touchstart',event=>{
-    const t=event.touches[0];touch=event.touches.length===1&&t.clientX>28&&t.clientX<innerWidth-28&&!event.target.closest('button,a,input')?{x:t.clientX,y:t.clientY}:null;
-  },{passive:true});
-  $('viewer').addEventListener('touchend',event=>{
-    if(!touch)return;const t=event.changedTouches[0],x=t.clientX-touch.x,y=t.clientY-touch.y;touch=null;
-    if(Math.abs(x)>70&&Math.abs(x)>Math.abs(y)*1.5&&!active)move(x<0?1:-1);
-  },{passive:true});
-  $('viewer').addEventListener('touchcancel',()=>{touch=null;},{passive:true});
+  installPageSwipe($('viewer'), {move, blocked:()=>Boolean(document.querySelector('dialog[open]'))});
   $('announcement-pause').addEventListener('click',()=>{
     const paused=$('menu-announcement').classList.toggle('is-paused');$('announcement-pause').setAttribute('aria-pressed',String(paused));
     $('announcement-pause').textContent=getLanguage()==='en'?(paused?'Play':'Pause'):(paused?'Reanudar':'Pausar');

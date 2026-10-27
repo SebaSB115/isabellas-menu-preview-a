@@ -1,6 +1,7 @@
 import { cp, copyFile, readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
 
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const source = resolve(repo, 'preview-a');
@@ -40,4 +41,18 @@ for (const [name, label] of [['journal.html', 'Vista previa local'], ['il-libro.
   await writeFile(path, html.replace(label, 'Demo pública · no producción'));
 }
 
-console.log('Isabella’s Journal y Borrador 1 generados en docs/ para la demo pública.');
+// Every published reader references one coherent revision of its modules/styles.
+// A browser that cached an older gesture handler must not mix it with new HTML.
+const readerFiles=['app.js','journal-experience.js','journal-pages.js','journal-swipe.js','style.css','journal-pages.css','journal-experience.css'];
+const revision=createHash('sha256');
+for(const name of readerFiles)revision.update(await readFile(resolve(target,'design-lab',name)));
+const version=revision.digest('hex').slice(0,12);
+for(const name of readerFiles.filter(name=>name.endsWith('.js'))){
+  const path=resolve(target,'design-lab',name);
+  const source=await readFile(path,'utf8');
+  await writeFile(path,source.replace(/(['"])(\.\/(?:app|journal-experience|journal-pages|journal-swipe)\.js)\1/g,(_,quote,url)=>`${quote}${url}?v=${version}${quote}`));
+}
+const journalPath=resolve(target,'design-lab/journal.html');
+await writeFile(journalPath,(await readFile(journalPath,'utf8')).replace(/(href|src)="(\.\/(?:app\.js|style\.css|journal-pages\.css|journal-experience\.css))"/g,`$1="$2?v=${version}"`));
+await writeFile(resolve(target,'design-lab/release.json'),JSON.stringify({journal:version})+'\n');
+console.log(`Isabella’s Journal ${version} y Borrador 1 generados en docs/ para la demo pública.`);

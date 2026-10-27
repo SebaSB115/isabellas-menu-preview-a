@@ -1,6 +1,6 @@
-import { preferredLanguage, journalExperience } from './journal-experience.js';
+import { preferredLanguage, journalExperience } from './journal-experience.js?v=711235c49040';
 import { categories as initialCategories, locales, rtlLocales } from '../menu-data.js';
-import { createJournalPaginator } from './journal-pages.js';
+import { createJournalPaginator } from './journal-pages.js?v=711235c49040';
 import { api as demoApi } from '../admin/demo-store.js';
 
 const $ = id => document.getElementById(id);
