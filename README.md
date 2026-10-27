@@ -1,10 +1,12 @@
 # Isabella's Costa Rica · Preview A de la carta
 
+**[Implementación V2 del 26 de octubre: Tabler, carta y menú impreso](notes/isabella-v2-tabler.html)**. Entrega local, sin publicar: administración con Tabler Core gratuito, Journal ES/EN, fotografía y detalle opcionales, avisos, QR e historial de PDFs. Fuente administrativa en `preview-a/admin`; la demo se regenera con `build:pages-admin` y `build:pages-journal`. Verificación: `check:admin`, `check:preview-a`, `check:admin-ui`, `check:v2` y `check:static`.
+
 **[Estado de la entrega del 23 de octubre de 2026](ESTADO_2026-10-23.md)**: alcance, comprobaciones y límites del preview.
 
 **Diseño predeterminado:** Isabella’s Journal en el preview local y en la demo pública de GitHub Pages. La carta editorial anterior sigue accesible como `borrador-1.html` (Borrador 1). La Central privada local y Journal comparten el catálogo de `/api/menu`; la demo pública comparte sus cambios solo entre el editor y Journal del mismo navegador mediante almacenamiento local.
 
-Prototipo independiente de la web oficial. Combina las nueve páginas del menú 2026 de Isabella's con una carta de revista interactiva: ilustración sin texto a un lado y platos con precios al otro. Incluye búsqueda, navegación por categorías, animación de hoja, diseño adaptable y cinco idiomas. Árabe y hebreo usan lectura de derecha a izquierda.
+Prototipo independiente de la web oficial. El archivo editorial conserva las nueve páginas del menú 2026 y los cinco idiomas históricos, incluido RTL para árabe y hebreo. Journal V2 utiliza únicamente español e inglés, detecta el idioma del navegador y permite cambiarlo manualmente. Los borradores anteriores permanecen disponibles como referencia.
 
 **Iteración visual (20/10/2026):** portada de libro, índice de capítulos en escritorio y tipografía Fraunces de código abierto. El lector ajusta la ilustración y los platos para mostrar hoja y controles en una pantalla; al cambiar de página no desplaza el documento. La [dirección visual de ambas cartas](notes/direccion-visual-dos-cartas-2026-10-20.md) explica el criterio de marca y UX.
 

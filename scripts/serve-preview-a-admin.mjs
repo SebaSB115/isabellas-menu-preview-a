@@ -5,6 +5,8 @@ import { dirname, extname, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import sharp from 'sharp';
+import QRCode from 'qrcode';
+import { printStatus, printHtml, generateEdition, editionPdf, editions, printFingerprint } from './print-menu.mjs';
 import { readCatalog, saveCatalog, dataDir } from './menu-store.mjs';
 import { allPermissions, hashPassword, permissionLabels, publicUser, queueUserUpdate, readUsers, verifyUser } from './central-users.mjs';
 
@@ -15,7 +17,7 @@ const authFile = resolve(dataDir, 'admin-auth.json');
 const uploadDir = resolve(root, 'assets/uploads');
 const explicitPort = process.env.ISABELLA_PREVIEW_PORT;
 let port = Number(explicitPort) || 4180;
-const mime = { '.html':'text/html; charset=utf-8', '.js':'text/javascript; charset=utf-8', '.css':'text/css; charset=utf-8', '.json':'application/json; charset=utf-8', '.webp':'image/webp', '.png':'image/png', '.svg':'image/svg+xml', '.woff2':'font/woff2' };
+const mime = { '.html':'text/html; charset=utf-8', '.js':'text/javascript; charset=utf-8', '.css':'text/css; charset=utf-8', '.json':'application/json; charset=utf-8', '.webp':'image/webp', '.png':'image/png', '.jpg':'image/jpeg', '.svg':'image/svg+xml', '.woff2':'font/woff2' };
 const directoryPages = new Map([
   ['/admin/', '/admin/index.html'],
   ['/admin/personal/', '/admin/personal/index.html'],
@@ -91,7 +93,7 @@ async function login(request, response) {
   failures.delete(ip);
   const token = randomBytes(32).toString('hex');
   const csrf = randomBytes(32).toString('hex');
-  sessions.set(token, { csrf, role:owner ? 'owner' : 'staff', userId:user?.id || null, permissions:owner ? allPermissions : user.permissions, expires: Date.now() + 8 * 60 * 60 * 1000 });
+  sessions.set(token, { csrf, username, role:owner ? 'owner' : 'staff', userId:user?.id || null, permissions:owner ? allPermissions : user.permissions, expires: Date.now() + 8 * 60 * 60 * 1000 });
   json(response, 200, { authenticated:true, csrf, role:owner ? 'owner' : 'staff', permissions:owner ? allPermissions : user.permissions }, { 'set-cookie':`isabella_admin=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=28800` });
 }
 async function manageUsers(request, response, path) {
@@ -145,11 +147,15 @@ async function upload(request, response) {
   if (!['jpeg', 'png', 'webp'].includes(metadata.format) || metadata.width < 500 || metadata.height < 500) return json(response, 400, { error:'La imagen debe medir al menos 500 × 500 píxeles.' });
   await mkdir(uploadDir, { recursive:true });
   const id = randomUUID();
+  const variants={};
   for (const width of [800, 1600]) {
-    const output = await sharp(bytes, { limitInputPixels:25000000 }).rotate().resize({ width, height:width, fit:'inside', withoutEnlargement:true }).webp({ quality:82, effort:4 }).toBuffer();
-    await writeFile(resolve(uploadDir, `${id}-${width}.webp`), output, { flag:'wx' });
+    const {data,info}=await sharp(bytes, { limitInputPixels:25000000 }).rotate().resize({ width, height:width, fit:'inside', withoutEnlargement:true }).webp({ quality:82, effort:4 }).toBuffer({resolveWithObject:true});
+    await writeFile(resolve(uploadDir, `${id}-${width}.webp`), data, { flag:'wx' });
+    variants[width]=info;
   }
-  json(response, 201, { art:{ src:`./assets/uploads/${id}-1600.webp`, srcSmall:`./assets/uploads/${id}-800.webp`, x:50, y:50 }, width:metadata.width, height:metadata.height });
+  const extension=metadata.format==='jpeg'?'jpg':metadata.format;
+  await writeFile(resolve(uploadDir, `${id}-original.${extension}`), bytes, {flag:'wx'});
+  json(response, 201, { art:{ src:`./assets/uploads/${id}-1600.webp`, srcSmall:`./assets/uploads/${id}-800.webp`, original:`./assets/uploads/${id}-original.${extension}`, srcWidth:variants[1600].width, srcHeight:variants[1600].height, srcSmallWidth:variants[800].width, srcSmallHeight:variants[800].height, x:50, y:50 }, width:metadata.width, height:metadata.height });
 }
 
 async function handle(request, response) {
@@ -159,7 +165,47 @@ async function handle(request, response) {
     const path = decodeURIComponent(url.pathname);
     if (path === '/api/menu' && request.method === 'GET') {
       const catalog = await readCatalog();
-      return json(response, 200, { version:catalog.version, categories:catalog.categories.filter(category => category.visible !== false).map(category => ({ ...category, items:category.items.filter(item => item.visible !== false) })) });
+      const fingerprint=printFingerprint(catalog);
+      const printed=(await editions()).filter(e=>e.fingerprint===fingerprint).map(e=>e.language);
+      return json(response, 200, { version:catalog.version, settings:catalog.settings || {}, printed:[...new Set(printed)], categories:catalog.categories.filter(category => category.visible !== false).map(category => ({ ...category, items:category.items.filter(item => item.visible !== false) })) });
+    }
+    if (path === '/api/menu.pdf' && request.method === 'GET') {
+      const language=url.searchParams.get('lang') || 'es', catalog=await readCatalog();
+      const edition=(await editions()).find(e=>e.language===language&&e.fingerprint===printFingerprint(catalog));
+      if(!edition) return json(response,404,{error:'Aún no hay una edición PDF actualizada en este idioma.'});
+      response.writeHead(200,headers({'content-type':'application/pdf','content-disposition':'attachment; filename="Isabellas-menu-'+language+'.pdf"','cache-control':'no-store'}));
+      response.end(await editionPdf(edition.id));return;
+    }
+    if(path==='/api/admin/menu-qr.svg'&&request.method==='GET'){
+      if(!await requireAdmin(request,response,false,'isabella.content'))return;
+      const catalog=await readCatalog(),target=catalog.settings?.publicUrl;
+      if(!target)return json(response,404,{error:'Configura primero la URL pública del menú.'});
+      const svg=await QRCode.toString(target,{type:'svg',errorCorrectionLevel:'M',margin:4,color:{dark:'#000000',light:'#ffffff'}});
+      response.writeHead(200,headers({'content-type':'image/svg+xml','content-disposition':'attachment; filename="Isabellas-menu-QR.svg"','cache-control':'no-store'}));response.end(svg);return;
+    }
+    if (path.startsWith('/api/admin/print')) {
+      const session=await requireAdmin(request,response,request.method!=='GET','isabella.print');if(!session)return;
+      const catalog=await readCatalog(), language=url.searchParams.get('lang') || 'es';
+      if(path==='/api/admin/print'&&request.method==='GET') return json(response,200,await printStatus(catalog,language));
+      if(path==='/api/admin/print'&&request.method==='POST'){
+        let input;try{input=JSON.parse((await body(request,2048)).toString());}catch{return json(response,400,{error:'Datos inválidos.'});}
+        const edition=await generateEdition(input.version,input.language,session.username||session.userId||'Propietario');
+        return json(response,201,edition);
+      }
+      if(path==='/api/admin/print/preview'&&request.method==='GET'){
+        response.writeHead(200,headers({'content-type':'text/html; charset=utf-8','cache-control':'no-store'}));response.end(await printHtml(catalog,language));return;
+      }
+      const match=/^\/api\/admin\/print\/([a-f0-9-]{36})\.pdf$/.exec(path);
+      if(match&&request.method==='GET'){const pdf=await editionPdf(match[1]);response.writeHead(200,headers({'content-type':'application/pdf','content-disposition':'attachment; filename="Isabellas-'+match[1]+'.pdf"','cache-control':'private, no-store'}));response.end(pdf);return;}
+      return json(response,404,{error:'Ruta de impresión no encontrada.'});
+    }
+    if(path==='/api/admin/content'&&request.method==='PUT'){
+      if(!await requireAdmin(request,response,true,'isabella.content'))return;
+      let payload;try{payload=JSON.parse((await body(request,8192)).toString());}catch{return json(response,400,{error:'Datos inválidos.'});}
+      const current=await readCatalog(), result=await saveCatalog({...current,settings:payload.settings},payload.version);
+      if(result.conflict)return json(response,409,{error:'La carta cambió en otra sesión. Tus textos se conservan; actualiza antes de guardar.'});
+      if(result.error)return json(response,400,{error:result.error});
+      return json(response,200,result.saved);
     }
     if (path === '/api/admin/login' && request.method === 'POST') return login(request, response);
     if (path === '/api/central/users' || path.startsWith('/api/central/users/')) return manageUsers(request, response, path);
@@ -182,6 +228,8 @@ async function handle(request, response) {
       try { payload = JSON.parse((await body(request, 2 * 1024 * 1024)).toString()); }
       catch { return json(response, 400, { error:'Datos inválidos.' }); }
       if (!Number.isInteger(payload.version) || !Array.isArray(payload.categories)) return json(response, 400, { error:'Carta inválida.' });
+      // Settings have their own permission and endpoint; product updates cannot change them.
+      delete payload.settings;
       if (session.role !== 'owner') {
         const current = await readCatalog();
         const categoryView = categories => categories.map(({ items, ...category }) => category);
@@ -207,6 +255,10 @@ async function handle(request, response) {
     }
     if (path === '/api/admin/upload' && request.method === 'POST') {
       if (!await requireAdmin(request, response, true, 'isabella.categories')) return;
+      return upload(request, response);
+    }
+    if (path === '/api/admin/product-image' && request.method === 'POST') {
+      if (!await requireAdmin(request, response, true, 'isabella.products')) return;
       return upload(request, response);
     }
     if (request.method !== 'GET' && request.method !== 'HEAD') return json(response, 405, { error:'Método no permitido.' });
@@ -237,7 +289,7 @@ async function handle(request, response) {
     response.end(request.method === 'HEAD' ? undefined : file);
   } catch (error) {
     if (error.code === 'ENOENT') return json(response, 404, { error:'No encontrado.' });
-    console.error(error);
+    if (!error.status || error.status >= 500) console.error(error);
     json(response, error.status || 500, { error:error.status ? error.message : 'No se pudo completar la operación.' });
   }
 }

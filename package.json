@@ -13,11 +13,20 @@
     "translate:setup": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup-translation.ps1",
     "check:preview-a": "node scripts/check-preview-a.mjs",
     "check:admin": "node scripts/check-admin.mjs",
+    "check:v2": "node scripts/check-v2-experience.mjs",
+    "check:static": "node scripts/check-static-v2.mjs",
+    "sync:tabler": "node scripts/sync-tabler.mjs",
     "build:entry-logos": "node scripts/build-entry-logos.mjs",
     "sync:admin-ui": "node scripts/sync-admin-entry.mjs",
     "check:admin-ui": "node scripts/sync-admin-entry.mjs --check"
   },
   "dependencies": {
+    "@tabler/core": "1.7.1",
+    "puppeteer-core": "25.16.0",
+    "qrcode": "1.5.4",
     "sharp": "^0.35.5"
+  },
+  "devDependencies": {
+    "axe-core": "4.14.0"
   }
 }

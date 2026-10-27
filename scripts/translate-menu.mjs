@@ -20,7 +20,7 @@ export async function translateSpanish(values) {
       if (code !== 0) return reject(translationError(stderr.trim() || 'El proceso de traducción terminó sin respuesta.'));
       try {
         const output = JSON.parse(stdout);
-        if (!Array.isArray(output) || output.length !== values.length || output.some(item => !['en','de','ar','he'].every(code => typeof item?.[code] === 'string'))) throw new Error('Respuesta incompleta');
+        if (!Array.isArray(output) || output.length !== values.length || output.some(item => typeof item?.en !== 'string')) throw new Error('Respuesta incompleta');
         resolveResult(output);
       } catch (error) { reject(translationError(error.message)); }
     });

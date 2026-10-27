@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { randomBytes, scrypt as scryptCallback } from 'node:crypto';
+import { createHash, randomBytes, scrypt as scryptCallback } from 'node:crypto';
 import { mkdtemp, mkdir, readFile, rm, unlink, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
@@ -8,12 +8,14 @@ import { dirname, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import sharp from 'sharp';
+import { launchBrowser } from './qa-browser-support.mjs';
 
 const scrypt = promisify(scryptCallback);
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const temp = await mkdtemp(resolve(tmpdir(), 'isabella-admin-qa-'));
 const imagePaths = [];
 let server;
+let browser;
 
 const port = await new Promise((resolvePort, reject) => {
   const socket = createServer();
@@ -73,25 +75,39 @@ try {
   assert.equal(publicMenu.categories[0].items[0].price,originalPrice + 100);
   const generated = publicMenu.categories.at(-1).items[0];
   assert.equal(generated.name.es,'Sopa de tomate');
-  for (const code of ['en','de','ar','he']) {
+  for (const code of ['en']) {
     assert(generated.name[code]?.trim(), `Falta nombre en ${code}`);
     assert(generated.description[code]?.trim(), `Falta descripción en ${code}`);
     assert(publicMenu.categories.at(-1).title[code]?.trim(), `Falta categoría en ${code}`);
   }
   assert.notEqual(generated.name.en, generated.name.es);
-  assert.match(generated.name.ar, /[\u0600-\u06ff]/);
-  assert.match(generated.name.he, /[\u0590-\u05ff]/);
+  for(const code of ['de','ar','he']){
+    assert.equal(generated.name[code],'', 'V2 solo genera inglés');
+    assert.equal(publicMenu.categories[0].items[0].name[code],menu.categories[0].items[0].name[code], 'Conserva las traducciones históricas');
+  }
   assert.equal((await request('/api/admin/menu',{ method:'PUT', headers:auth, body:JSON.stringify({ version:1, categories:next }) })).response.status,409);
 
   const image = await sharp({ create:{ width:900, height:1200, channels:3, background:'#5c352d' } }).png().toBuffer();
   const uploaded = await request('/api/admin/upload',{ method:'POST', headers:{ cookie, 'x-csrf-token':csrf, 'content-type':'image/png' }, body:image });
   assert.equal(uploaded.response.status,201);
-  for (const key of ['src','srcSmall']) {
+  for (const key of ['src','srcSmall','original']) {
     imagePaths.push(resolve(repo,'preview-a',uploaded.data.art[key].slice(2)));
     const file = await readFile(imagePaths.at(-1));
     assert(file.length > 100);
   }
   const withArt = structuredClone(saved.data.categories);
+  for(const [width,height] of [[1200,800],[800,800],[800,1200]]){
+    const sample=await sharp({create:{width,height,channels:3,background:'#5c352d'}}).png().toBuffer();
+    const productUpload=await request('/api/admin/product-image',{method:'POST',headers:{cookie,'x-csrf-token':csrf,'content-type':'image/png'},body:sample});
+    assert.equal(productUpload.response.status,201,productUpload.data.error);
+    const photo=productUpload.data.art;
+    assert.equal(photo.srcWidth<=1600&&photo.srcSmallWidth<=800,true);
+    assert.equal(photo.srcWidth/photo.srcHeight,width/height);
+    const originalPath=resolve(repo,'preview-a',photo.original.slice(2));
+    imagePaths.push(originalPath,resolve(repo,'preview-a',photo.src.slice(2)),resolve(repo,'preview-a',photo.srcSmall.slice(2)));
+    assert.equal(createHash('sha256').update(await readFile(originalPath)).digest('hex'),createHash('sha256').update(sample).digest('hex'));
+    if(width===1200)withArt[0].items[0].photo={...photo,x:68,y:30};
+  }
   withArt.at(-1).art = { ...uploaded.data.art, x:60, y:35 };
   withArt.at(-1).items[0].visible = false;
   withArt.at(-1).items[0].name.en = 'Injected';
@@ -101,6 +117,28 @@ try {
   const hidden = (await request('/api/menu')).data.categories.at(-1);
   assert.equal(hidden.items.length,0);
   assert.equal(hidden.art.x,60);
+  assert.equal((await request('/api/menu')).data.categories[0].items[0].photo.x,68);
+  assert.equal((await request('/api/menu')).data.categories[0].items[0].photo.y,30);
+  browser=await launchBrowser();
+  const page=await browser.newPage();
+  for(const width of [390,1440]){
+    await page.setViewport({width,height:900});
+    await page.goto(`${base}/design-lab/journal-fluido.html?lang=es`,{waitUntil:'networkidle0'});
+    await page.click(`[data-dish="${withArt[0].items[0].id}"] [data-detail]`);
+    assert.equal(await page.$eval('#dish-dialog img',image=>!!image.srcset&&image.sizes.length>0),true,'La ficha usa variantes responsive para fotos nuevas.');
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=document.documentElement.clientWidth+1),true);
+  }
+  await page.goto(`${base}/admin/`,{waitUntil:'networkidle0'});
+  await page.type('#username','isabella-admin');await page.type('#password',password);
+  await page.click('#login-form button[type="submit"]');
+  await page.waitForSelector('#app-shell:not([hidden])');
+  await page.click(`[data-product="${withArt[0].items[0].id}"]`);
+  await page.click('#product-image summary');
+  assert.equal(await page.$eval('#product-photo-previews',element=>!element.hidden),true);
+  assert.equal(await page.$eval('#product-original-link',element=>!element.hidden&&element.href.endsWith('-original.png')),true);
+  await page.$eval('#product-focus-x',element=>{element.value='72';element.dispatchEvent(new Event('input',{bubbles:true}));});
+  assert.equal(await page.$eval('#product-photo-preview',image=>image.style.objectPosition.startsWith('72%')),true);
+  await browser.close();browser=undefined;
   const renamed = structuredClone(artSaved.data.categories);
   renamed.at(-1).items[0].name.es = 'Sopa de cebolla';
   renamed.at(-1).items[0].name.en = 'Injected';
@@ -118,7 +156,7 @@ try {
   assert.equal((await request('/central/usuarios/', { redirect:'manual' })).response.status, 303);
   const staffPassword = randomBytes(18).toString('base64url');
   assert.equal((await request('/admin/personal/', { headers:auth })).response.status, 200);
-  assert.deepEqual(Object.keys((await request('/api/central/users', { headers:auth })).data.permissions).sort(), ['isabella.categories','isabella.products']);
+  assert.deepEqual(Object.keys((await request('/api/central/users', { headers:auth })).data.permissions).sort(), ['isabella.categories','isabella.content','isabella.print','isabella.products']);
   assert.equal((await request('/api/central/users', { method:'POST', headers:auth, body:JSON.stringify({ name:'Acceso ajeno', username:'qa-ajeno', password:staffPassword, permissions:['boccantina.kitchen'], active:true }) })).response.status, 400);
   const created = await request('/api/central/users', { method:'POST', headers:auth, body:JSON.stringify({ name:'Prueba de productos', username:'qa-productos', password:staffPassword, permissions:['isabella.products'], active:true }) });
   assert.equal(created.response.status, 201, created.data.error);
@@ -168,7 +206,7 @@ try {
   const categoryCreated = await request('/api/admin/menu', { method:'PUT', headers:categoryAuth, body:JSON.stringify({ version:categoryMenu.version, categories:newCategory }) });
   assert.equal(categoryCreated.response.status, 200, categoryCreated.data.error);
   assert.equal(categoryCreated.data.categories[1].id, 'qa-empty');
-  for (const code of ['es','en','de','ar','he']) assert(categoryCreated.data.categories[1].title[code]?.trim(), `Falta traducción de categoría en ${code}`);
+  for (const code of ['es','en']) assert(categoryCreated.data.categories[1].title[code]?.trim(), `Falta traducción de categoría en ${code}`);
   const withoutEmpty = categoryCreated.data.categories.filter(category => category.id !== 'qa-empty');
   const emptyDeleted = await request('/api/admin/menu', { method:'PUT', headers:categoryAuth, body:JSON.stringify({ version:categoryCreated.data.version, categories:withoutEmpty }) });
   assert.equal(emptyDeleted.response.status, 200, emptyDeleted.data.error);
@@ -183,6 +221,7 @@ try {
   assert.equal((await request('/api/admin/session', { headers:staffAuth })).response.status, 401);
   console.log('Central Isabella: autenticación, usuarios, permisos por vista, revocación, CRUD, imágenes y traducciones OK.');
 } finally {
+  await browser?.close();
   server?.kill();
   for (const path of imagePaths) await unlink(path).catch(() => {});
   const safeBase = resolve(tmpdir()) + sep;

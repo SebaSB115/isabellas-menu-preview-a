@@ -10,6 +10,8 @@ export const userFile = resolve(process.env.ISABELLA_USERS_FILE || resolve(dataD
 export const permissionLabels = Object.freeze({
   'isabella.products': 'Isabella’s · Productos',
   'isabella.categories': 'Isabella’s · Categorías e imágenes',
+  'isabella.content': 'Isabella’s · Avisos de la carta',
+  'isabella.print': 'Isabella’s · Menú impreso',
 });
 export const allPermissions = Object.keys(permissionLabels);
 let writeQueue = Promise.resolve();

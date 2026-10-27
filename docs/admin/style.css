@@ -350,6 +350,3 @@ body.isabella-sidebar-open { overflow:hidden; }
   .app-shell .form-actions .primary-button { flex:1 1 auto; }
   .app-shell .form-actions .product-edit-state { order:-1; flex:1 0 100%; margin:0; }
 }
-
-.demo-banner { display:grid; gap:.2rem; padding:.75rem clamp(1rem,3vw,2.5rem); border-bottom:1px solid #dec8a9; background:#f9ead0; color:#4a332b; font-size:.81rem; }
-.demo-banner strong { font-size:.86rem; }

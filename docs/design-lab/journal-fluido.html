@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="es" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#f4eadb">
+  <title>Isabella’s Journal · Propuesta de lectura</title>
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="../assets/fonts/fraunces-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="./journal-fluido.css">
+  <script type="module" src="./journal-fluido.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#content" id="skip-link">Saltar a los platos</a>
+  <div class="preview-note" id="preview-note">Demo pública · no producción · La carta actual sigue disponible</div>
+  <header class="site-header" id="site-header">
+    <div class="site-header__inner">
+      <a class="brand" href="#inicio" aria-label="Isabella’s · Ir al inicio"><img src="../central/assets/isabella-logo-transparent.png" width="264" height="100" alt="Isabella’s · Pizzería & Wine Bar"></a>
+      <div class="site-header__actions"><div class="language-switch" id="language-switch" role="group" aria-label="Idioma de la carta / Menu language"><button type="button" data-language="es" lang="es" aria-label="Español" aria-pressed="true">ES</button><button type="button" data-language="en" lang="en" aria-label="English" aria-pressed="false">EN</button></div></div>
+    </div>
+  </header>
+  <aside class="announcement" id="announcement" hidden aria-label="Aviso del restaurante"><p id="announcement-text"></p><button type="button" id="announcement-pause" hidden aria-pressed="false">Pausar</button></aside>
+  <nav class="category-rail" id="category-rail" aria-label="Categorías"><div class="category-rail__inner"><button class="index-trigger" id="index-trigger" type="button" aria-haspopup="dialog" aria-controls="index-dialog"><span class="index-trigger__label" id="index-trigger-label">Categorías</span><span class="index-trigger__current" id="active-category-name">Ensaladas y sopas</span><span class="index-trigger__arrow" aria-hidden="true">⌄</span></button></div></nav>
+  <main id="content">
+    <section class="introduction" id="inicio" aria-labelledby="intro-title"><div class="introduction__inner"><p class="introduction__edition">Isabella’s Journal · 2026</p><h1 id="intro-title">La carta</h1><p id="intro-copy">Cocina italiana para disfrutar a tu ritmo.</p></div></section>
+    <div class="menu-layout"><aside class="menu-sidebar" aria-label="Índice de la carta"><nav id="sidebar-links"></nav></aside><div class="menu-chapters" id="chapters"></div></div>
+  </main>
+   <footer class="site-footer"><div><span id="footer-menu-label">Isabella’s · Menú 2026</span><p id="service-note">Precios en colones. Incluyen impuestos; no incluyen 10 % de servicio.</p><p id="fallback-note" hidden></p></div><div class="site-footer__links"><a id="printed-menu" href="../api/menu.pdf?lang=es" hidden>Descargar carta completa (PDF)</a><a id="current-menu" href="./journal.html">Ver diseño actual</a><a href="./photo-credits.html" id="photo-credits">Fotografías y créditos</a></div></footer>
+  <dialog class="index-dialog" id="index-dialog" aria-labelledby="index-title"><div class="index-dialog__header"><h2 id="index-title">Categorías</h2><button id="index-close" type="button" aria-label="Cerrar categorías">×</button></div><nav id="index-links" aria-label="Todas las categorías"></nav><div class="index-dialog__footer"><a href="./journal.html" id="index-current-menu">Ver diseño actual</a></div></dialog>
+  <dialog class="dish-dialog" id="dish-dialog" aria-modal="true" aria-labelledby="dish-title"></dialog>
+</body>
+</html>

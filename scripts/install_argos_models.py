@@ -1,4 +1,4 @@
-"""Install the four translation legs used by Isabella's local menu."""
+"""Install the Spanish-English model used by Isabella's local menu."""
 import os
 from pathlib import Path
 
@@ -10,7 +10,7 @@ os.environ.setdefault("ARGOS_COMPUTE_TYPE", "int8")
 
 import argostranslate.package  # noqa: E402
 
-required = [("es", "en"), ("en", "de"), ("en", "ar"), ("en", "he")]
+required = [("es", "en")]
 installed = {(item.from_code, item.to_code) for item in argostranslate.package.get_installed_packages()}
 missing = [pair for pair in required if pair not in installed]
 if missing:
@@ -23,4 +23,4 @@ if missing:
             raise SystemExit(f"No se encontro el modelo {source}->{target}.")
         print(f"Descargando e instalando {source}->{target}...", flush=True)
         argostranslate.package.install_from_path(package.download())
-print("Modelos es/en/de/ar/he listos.", flush=True)
+print("Modelo es/en listo.", flush=True)

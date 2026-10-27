@@ -1,0 +1,7 @@
+{
+  "package": "@tabler/core",
+  "version": "1.7.1",
+  "license": "MIT",
+  "source": "https://github.com/tabler/tabler",
+  "generatedBy": "scripts/sync-tabler.mjs"
+}

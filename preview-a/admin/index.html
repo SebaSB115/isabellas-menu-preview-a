@@ -7,7 +7,8 @@
   <meta name="theme-color" content="#291b20" />
   <title>Central de carta · Isabella's</title>
   <link rel="icon" href="../favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="./style.css" />
+  <link rel="stylesheet" href="../vendor/tabler/tabler.min.css" />
+  <link rel="stylesheet" href="./tabler-workspace.css" />
   <link rel="stylesheet" href="../admin-entry.css" />
   <script src="./app.js" type="module"></script>
 </head>
@@ -35,12 +36,13 @@
   <div class="app-shell" id="app-shell" hidden>
     <button class="sidebar-backdrop" id="sidebar-backdrop" type="button" aria-label="Cerrar menú de administración" tabindex="-1"></button>
     <aside class="sidebar" id="admin-sidebar" aria-label="Navegación de la central" aria-hidden="true" inert>
-      <div class="sidebar-brand"><span class="monogram">I<span>’</span></span><div><strong>Isabella's</strong><small>Central de carta</small></div><button class="sidebar-close" id="sidebar-close" type="button" aria-label="Cerrar menú">×</button></div>
+      <div class="sidebar-brand"><img src="../central/assets/isabella-logo-transparent.png" alt="Isabella’s" width="170" height="55"><button class="sidebar-close" id="sidebar-close" type="button" aria-label="Cerrar menú">×</button></div>
       <div class="sidebar-divider"></div>
       <p class="sidebar-caption">Administración</p>
       <nav class="main-nav" aria-label="Secciones">
         <button type="button" data-tab="products" class="is-active" aria-pressed="true"><span class="nav-symbol" aria-hidden="true">◈</span> Productos <span id="product-count"></span></button>
         <button type="button" data-tab="categories" aria-pressed="false"><span class="nav-symbol" aria-hidden="true">▤</span> Categorías <span id="category-count"></span></button>
+        <button type="button" data-tab="content">Avisos de la carta</button><button type="button" data-tab="print">Menú impreso</button>
         <a id="staff-link" class="sidebar-staff-link" href="./personal/" hidden><span class="nav-symbol" aria-hidden="true">◦</span> Administración</a>
       </nav>
       <div class="sidebar-foot"><span class="online-dot"></span> Vista previa local<br /><small>Los cambios se guardan en este equipo.</small></div>
@@ -52,11 +54,13 @@
         <div class="page-heading"><div><p class="overline">Carta 2026 · control editorial</p><h1 id="page-title" tabindex="-1">Productos</h1><p id="page-description">Precios, textos y disponibilidad de la carta.</p></div><button class="primary-button" id="new-button" type="button">+ Nuevo producto</button></div>
         <div class="notice" id="notice" role="status" aria-live="polite" hidden></div>
         <div class="content-layout">
-          <section class="catalog-panel" aria-label="Listado"><div class="category-list-action" id="category-list-action" hidden><button class="primary-button" id="new-category-button" type="button">+ Nueva categoría</button></div><div class="catalog-tools"><label for="search" class="sr-only">Buscar productos o categorías</label><input id="search" type="search" placeholder="Buscar en la carta" autocomplete="off" aria-controls="catalog-list" /><span id="list-count" role="status" aria-live="polite"></span></div><div class="product-list-controls" id="product-list-controls"><button id="unpriced-filter" type="button" aria-pressed="false">Sin precio <span id="unpriced-count"></span></button></div><div id="catalog-list"></div></section>
+          <section id="catalog-panel" class="catalog-panel" aria-label="Listado"><div class="category-list-action" id="category-list-action" hidden><button class="primary-button" id="new-category-button" type="button">+ Nueva categoría</button></div><div class="catalog-tools"><label for="search" class="sr-only">Buscar productos o categorías</label><input id="search" type="search" placeholder="Buscar en la carta" autocomplete="off" aria-controls="catalog-list" /><span id="list-count" role="status" aria-live="polite"></span></div><div class="product-list-controls" id="product-list-controls"><button id="unpriced-filter" type="button" aria-pressed="false">Sin precio <span id="unpriced-count"></span></button></div><div id="catalog-list"></div></section>
           <section class="editor-panel" id="editor-panel" aria-label="Editor"></section>
         </div>
+        <section id="tools-panel" class="tools-panel" hidden></section>
       </main>
     </div>
   </div>
+<dialog id="changes-dialog" class="guard-dialog" aria-labelledby="changes-title"><h2 id="changes-title">Tienes cambios sin guardar</h2><p>Puedes guardarlos antes de continuar o seguir editando.</p><div class="dialog-actions"><button type="button" class="btn btn-primary" data-choice="save">Guardar y continuar</button><button type="button" class="btn" data-choice="discard">Descartar</button><button type="button" class="btn" data-choice="stay">Seguir editando</button></div></dialog>
 </body>
 </html>

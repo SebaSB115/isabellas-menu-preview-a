@@ -23,7 +23,17 @@ if (!app.includes(localRequest)) throw new Error('No se encontró la lectura del
 app = app.replace(localRequest, "    const data = await demoApi('/api/admin/menu');");
 await writeFile(appPath, app);
 
-for (const [name, label] of [['journal.html', 'Vista previa local'], ['il-libro.html', 'Exploración visual local']]) {
+// The isolated continuous-reader proposal uses the same browser-local catalog
+// as the static administrative demo; the live preview keeps the Node API.
+const flowPath = resolve(target, 'design-lab/journal-fluido.js');
+let flow = await readFile(flowPath, 'utf8');
+const flowRequest = "  const response=await fetch('../api/menu',{cache:'no-store'});\n  if(!response.ok)throw new Error('No se pudo leer la carta.');\n  return response.json();";
+if (!flow.includes(flowRequest)) throw new Error('No se encontró la lectura del catálogo del lector continuo.');
+flow = flow.replace(flowRequest, "  return demoApi('/api/admin/menu');");
+flow = "import { api as demoApi } from '../admin/demo-store.js';\n" + flow;
+await writeFile(flowPath, flow);
+
+for (const [name, label] of [['journal.html', 'Vista previa local'], ['il-libro.html', 'Exploración visual local'], ['journal-fluido.html', 'Propuesta local']]) {
   const path = resolve(target, 'design-lab', name);
   const html = await readFile(path, 'utf8');
   if (!html.includes(label)) throw new Error(`Falta el aviso de preview en ${name}.`);

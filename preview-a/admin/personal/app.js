@@ -1,3 +1,5 @@
+import { tablerComponents } from '../form-state.js';
+tablerComponents();
 const $ = id => document.getElementById(id);
 const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[char]);
 const form = $('user-form');
@@ -43,6 +45,7 @@ function openEditor(user, source) {
   $('form-error').textContent = '';
   $('permission-options').innerHTML = Object.entries(labels).map(([key,label]) => `<label><input type="checkbox" name="permissions" value="${escapeHtml(key)}" ${user?.permissions.includes(key) ? 'checked' : ''}>${escapeHtml(label.split(' · ').at(-1))}</label>`).join('');
   $('user-dialog').showModal();
+  tablerComponents(form);
   form.elements.namedItem('name').focus();
 }
 

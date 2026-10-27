@@ -18,7 +18,7 @@ def main():
         raise ValueError("Solicitud de traducción inválida")
     languages = {lang.code: lang for lang in argostranslate.translate.get_installed_languages()}
     translators = {}
-    for source, target in [("es", "en"), ("en", "de"), ("en", "ar"), ("en", "he")]:
+    for source, target in [("es", "en")]:
         if source not in languages or target not in languages:
             raise RuntimeError(f"Falta el modelo {source}->{target}; ejecuta npm.cmd run translate:setup")
         translators[target] = languages[source].get_translation(languages[target])
@@ -27,9 +27,6 @@ def main():
         english = translators["en"].translate(value).strip() if value.strip() else ""
         result.append({
             "en": english,
-            "de": translators["de"].translate(english).strip() if english else "",
-            "ar": translators["ar"].translate(english).strip() if english else "",
-            "he": translators["he"].translate(english).strip() if english else "",
         })
     json.dump(result, sys.stdout, ensure_ascii=False)
 

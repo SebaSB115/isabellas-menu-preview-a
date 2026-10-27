@@ -1,3 +1,4 @@
+import { preferredLanguage, journalExperience } from './journal-experience.js';
 import { categories as initialCategories, locales, rtlLocales } from '../menu-data.js';
 import { createJournalPaginator } from './journal-pages.js';
 
@@ -22,7 +23,7 @@ const journalPageNav = { es:'Páginas y categorías', en:'Pages and categories',
 const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[char]);
 const rootAsset = path => path?.startsWith('./') ? `../${path.slice(2)}` : path;
 const artFor = category => category.art?.src ? rootAsset(category.art.src) : `../assets/menu-art/${category.source.replace(/\.webp$/, '-art.webp')}`;
-// The eventual admin can set editorialPhoto.src. The current admin and data model are untouched.
+// Product details use their own verified photograph; category photographs remain editorial.
 const photoFor = category => category.editorialPhoto?.src ? rootAsset(category.editorialPhoto.src) : category.art?.src ? rootAsset(category.art.src) : imageByCategory[category.id] || artFor(category);
 const mediaCaption = category => category.art?.src && !category.editorialPhoto?.src ? translated(category.title) : category.editorialPhoto?.src || imageByCategory[category.id] ? copy[language].photo : copy[language].original;
 const artPosition = category => `${Math.max(0, Math.min(100, Number(category.art?.x ?? 50)))}% ${Math.max(0, Math.min(100, Number(category.art?.y ?? 50)))}%`;
@@ -32,17 +33,19 @@ const visibleCategories = () => menuCategories.filter(category => category.visib
 const current = () => visibleCategories().find(category => category.id === selected);
 const params = new URLSearchParams(location.search);
 let menuCategories = initialCategories;
-let language = locales.includes(params.get('lang')) ? params.get('lang') : 'es';
+let language = proposal==='journal' ? preferredLanguage(params.get('lang')) : locales.includes(params.get('lang')) ? params.get('lang') : 'es';
+let menuSettings={}, printedLanguages=[];
 let selected = params.get('category') || 'cover';
 let page = Math.max(0, Number.parseInt(params.get('page') || '0', 10) || 0);
 let firstRender = true;
+const experience = proposal === 'journal' ? journalExperience({getLanguage:()=>language,changeLanguage:value=>{language=value;navigate(selected,page,true);},getItems:()=>visibleCategories().flatMap(c=>c.items),move,priceMarkup,getSettings:()=>menuSettings,getPrinted:()=>printedLanguages}) : null;
 const journalPaginator = proposal === 'journal' ? createJournalPaginator({ viewer:$('viewer'), dishMarkup, getLanguage:() => language }) : null;
 
 function priceMarkup(price) {
   return price == null ? `<span class="dish-price dish-price--missing">${escapeHtml(copy[language].missing)}</span>` : `<span class="dish-price"><bdi dir="ltr">${money(price)}</bdi></span>`;
 }
 function dishMarkup(item) {
-  return `<article class="dish-entry" data-dish="${escapeHtml(item.id)}"><div class="dish-entry__top"><h3>${escapeHtml(translated(item.name))}</h3>${item.options?.length ? '' : priceMarkup(item.price)}</div><p>${escapeHtml(translated(item.description))}</p>${item.options?.length ? `<div class="dish-extras">${item.options.map(option => `<div><span>${escapeHtml(translated(option.label))}</span>${priceMarkup(option.price)}</div>`).join('')}</div>` : ''}${item.addon ? `<div class="dish-extras"><div><span>${escapeHtml(translated(item.addon.label))}</span>${priceMarkup(item.addon.price)}</div></div>` : ''}</article>`;
+  return `<article class="dish-entry" data-dish="${escapeHtml(item.id)}"><div class="dish-entry__top"><h3>${proposal==='journal'&&item.detailEnabled ? `<button class="dish-name-button" type="button" data-open-dish="${escapeHtml(item.id)}">${escapeHtml(translated(item.name))}</button>` : escapeHtml(translated(item.name))}</h3>${item.options?.length ? '' : priceMarkup(item.price)}</div><p>${escapeHtml(translated(item.description))}</p>${proposal==='journal'&&item.available===false?`<p class="dish-unavailable">${language==='en'?'Temporarily unavailable':'No disponible hoy'}</p>`:''}${item.options?.length ? `<div class="dish-extras">${item.options.map(option => `<div><span>${escapeHtml(translated(option.label))}</span>${priceMarkup(option.price)}</div>`).join('')}</div>` : ''}${item.addon ? `<div class="dish-extras"><div><span>${escapeHtml(translated(item.addon.label))}</span>${priceMarkup(item.addon.price)}</div></div>` : ''}</article>`;
 }
 function bookCover() {
   const t = copy[language];
@@ -74,7 +77,7 @@ function journalCategory(category) {
   const footer = `<footer class="journal-sheet__footer"><span>Isabella’s Journal · ${chapter}</span><span>${folio}</span></footer>`;
 
   if (currentPage.kind === 'photo') {
-    return `<section class="journal-category journal-category--${index % 2 ? 'reverse' : 'forward'}" data-chapter="${escapeHtml(category.id)}" data-page="${page + 1}" data-page-count="${pages.length}" aria-labelledby="journal-title"><div class="journal-category__heading"><p>Isabella’s Journal <span>${chapter}</span></p><h1 id="journal-title" tabindex="-1">${name}</h1><span class="journal-category__count">${escapeHtml(t.dishes(category.items.length))}</span><span class="journal-category__folio">${folio}</span></div><div class="journal-opening"><figure class="journal-photo"><img src="${escapeHtml(photoFor(category))}" alt="${escapeHtml(mediaCaption(category))}" /><figcaption>${escapeHtml(mediaCaption(category))}</figcaption></figure><div class="journal-reading"><div class="journal-reading__meta"><span>${chapter}</span><span>${escapeHtml(t.prices)}</span></div><div class="journal-page__dishes">${currentPage.columns[0].length ? currentPage.columns[0].map(dishMarkup).join('') : `<p>${escapeHtml(t.empty)}</p>`}</div></div></div>${footer}</section>`;
+    return `<section class="journal-category journal-category--${index % 2 ? 'reverse' : 'forward'}" data-chapter="${escapeHtml(category.id)}" data-page="${page + 1}" data-page-count="${pages.length}" aria-labelledby="journal-title"><div class="journal-category__heading"><p>Isabella’s Journal <span>${chapter}</span></p><h1 id="journal-title" tabindex="-1">${name}</h1><span class="journal-category__count">${escapeHtml(t.dishes(category.items.length))}</span><span class="journal-category__folio">${folio}</span></div><div class="journal-opening"><figure class="journal-photo"><img src="${escapeHtml(photoFor(category))}" alt="${escapeHtml(mediaCaption(category))}" /><figcaption>${escapeHtml(mediaCaption(category))}</figcaption></figure><div class="journal-reading"><div class="journal-reading__meta"><span>${chapter}</span><span>${escapeHtml(t.prices)}</span></div><div class="journal-page__dishes">${currentPage.columns[0].length ? currentPage.columns[0].map(dishMarkup).join('') : category.items.length ? '' : `<p>${escapeHtml(t.empty)}</p>`}</div></div></div>${footer}</section>`;
   }
 
   return `<section class="journal-sheet journal-sheet--type" data-chapter="${escapeHtml(category.id)}" data-page="${page + 1}" data-page-count="${pages.length}" aria-labelledby="journal-title"><div class="journal-sheet__topline"><span>Isabella’s Journal · ${chapter}</span><span>${folio}</span></div><header class="journal-sheet__heading"><p>${chapter}</p><h1 id="journal-title" tabindex="-1">${name}</h1><span>${escapeHtml(t.prices)}</span></header><div class="journal-sheet__columns">${currentPage.columns.map(items => `<div class="journal-page__dishes">${items.map(dishMarkup).join('')}</div>`).join('')}</div>${footer}</section>`;
@@ -86,7 +89,14 @@ function steps() {
 function renderNavigation() {
   const t = copy[language];
   const groups = visibleCategories();
-  $('chapter-nav').innerHTML = `<button type="button" data-category="cover" ${selected === 'cover' ? 'aria-current="page"' : ''}>${escapeHtml(t.cover)}</button>${groups.map((category,index) => `<button type="button" data-category="${escapeHtml(category.id)}" ${selected === category.id ? 'aria-current="page"' : ''}><span>${String(index+1).padStart(2,'0')}</span>${escapeHtml(translated(category.title))}</button>`).join('')}`;
+  const chapterButtons = `<button type="button" data-category="cover" ${selected === 'cover' ? 'aria-current="page"' : ''}>${escapeHtml(t.cover)}</button>${groups.map((category,index) => `<button type="button" data-category="${escapeHtml(category.id)}" ${selected === category.id ? 'aria-current="page"' : ''}><span>${String(index+1).padStart(2,'0')}</span>${escapeHtml(translated(category.title))}</button>`).join('')}`;
+  $('chapter-nav').innerHTML = chapterButtons;
+  if (proposal === 'journal') {
+    $('reader-index-list').innerHTML = chapterButtons;
+    $('reader-index-title').textContent = t.chapters;
+    $('reader-index-close').setAttribute('aria-label', language === 'en' ? 'Close menu index' : 'Cerrar índice');
+    $('reader-index-current').textContent = `${t.chapters} · ${selected === 'cover' ? t.cover : translated(current()?.title)}`;
+  }
   $('chapter-select').innerHTML = `<option value="cover">${escapeHtml(t.cover)}</option>${groups.map(category => `<option value="${escapeHtml(category.id)}">${escapeHtml(translated(category.title))}</option>`).join('')}`;
   $('chapter-select').value = selected;
   $('chapter-nav').setAttribute('aria-label',t.chapters);
@@ -116,6 +126,10 @@ function render() {
   const draft = new URL('../borrador-1.html', location.href);
   draft.searchParams.set('lang', language);
   document.querySelector('.lab-links a:last-child').href = draft;
+  if (proposal === 'journal') {
+    $('reader-comparison').href = comparison;
+    $('reader-draft').href = draft;
+  }
   renderNavigation();
   const requestedPage = page;
   $('viewer').innerHTML = selected === 'cover' ? (proposal === 'libro' ? bookCover() : journalCover()) : (proposal === 'libro' ? bookCategory(current()) : journalCategory(current()));
@@ -131,10 +145,11 @@ function render() {
   $('page-prev').disabled = position === 0;
   $('page-next').disabled = position === all.length - 1;
   if (!firstRender) {
-    $('viewer').scrollIntoView({ block:'start', behavior:'instant' });
+    if (proposal !== 'journal' || innerWidth > 760) $('viewer').scrollIntoView({ block:'start', behavior:'instant' });
     $('viewer').querySelector('h1')?.focus({preventScroll:true});
   }
   firstRender = false;
+  experience?.render();
 }
 function navigate(category, nextPage = 0, replace = false) {
   selected = category;
@@ -156,22 +171,28 @@ function move(delta) {
 document.addEventListener('click', event => {
   if (event.target.closest('.lab-logo')) { event.preventDefault(); navigate('cover'); return; }
   const category = event.target.closest('[data-category]');
-  if (category) navigate(category.dataset.category);
+  if (category) { if (proposal === 'journal' && $('reader-index').open) $('reader-index').close(); navigate(category.dataset.category); }
   if (event.target.closest('[data-open-first]')) navigate(visibleCategories()[0]?.id || 'cover');
 });
+if (proposal === 'journal') {
+  $('reader-index-toggle').addEventListener('click', () => $('reader-index').showModal());
+  $('reader-index-close').addEventListener('click', () => { $('reader-index').close(); $('reader-index-toggle').focus({ preventScroll:true }); });
+  $('reader-index').addEventListener('click', event => { if (event.target === $('reader-index')) $('reader-index').close(); });
+  $('reader-index').addEventListener('close', () => $('reader-index-toggle').focus({ preventScroll:true }));
+}
 $('chapter-select').addEventListener('change', event => navigate(event.target.value));
 $('language-select').addEventListener('change', event => { language = event.target.value; navigate(selected,page,true); });
 $('page-prev').addEventListener('click', () => move(-1));
 $('page-next').addEventListener('click', () => move(1));
 document.addEventListener('keydown', event => {
-  if (proposal !== 'libro' || !['ArrowLeft','ArrowRight'].includes(event.key) || ['INPUT','SELECT','TEXTAREA'].includes(document.activeElement?.tagName)) return;
+  if (experience?.isOpen() || !['ArrowLeft','ArrowRight'].includes(event.key) || ['INPUT','SELECT','TEXTAREA'].includes(document.activeElement?.tagName)) return;
   event.preventDefault();
   const forward = rtlLocales.has(language) ? event.key === 'ArrowLeft' : event.key === 'ArrowRight';
   move(forward ? 1 : -1);
 });
 window.addEventListener('popstate', () => {
   const query = new URLSearchParams(location.search);
-  language = locales.includes(query.get('lang')) ? query.get('lang') : 'es';
+  language = proposal==='journal' ? preferredLanguage(query.get('lang')) : locales.includes(query.get('lang')) ? query.get('lang') : 'es';
   selected = query.get('category') || 'cover';
   page = Math.max(0, Number.parseInt(query.get('page') || '0',10) || 0);
   render();
@@ -187,6 +208,7 @@ async function refreshCatalog() {
     const changed = catalogVersion !== null && data.version !== catalogVersion;
     menuCategories = data.categories;
     catalogVersion = data.version;
+    menuSettings=data.settings || {};printedLanguages=data.printed || [];experience?.render();
     if (changed && proposal === 'journal') {
       journalPaginator.clear();
       firstRender = true;

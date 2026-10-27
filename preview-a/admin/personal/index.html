@@ -7,7 +7,8 @@
   <meta name="theme-color" content="#291b20">
   <title>Administración · Personal — Isabella’s</title>
   <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="../../vendor/tabler/tabler.min.css">
+  <link rel="stylesheet" href="../tabler-workspace.css">
   <link rel="stylesheet" href="./style.css">
   <script src="./app.js" type="module"></script>
 </head>
@@ -16,9 +17,9 @@
   <div class="app-shell" id="app-shell">
     <button class="sidebar-backdrop" id="sidebar-backdrop" type="button" aria-label="Cerrar menú de administración" tabindex="-1"></button>
     <aside class="sidebar" id="admin-sidebar" aria-label="Navegación de la central" aria-hidden="true" inert>
-      <div class="sidebar-brand"><span class="monogram">I<span>’</span></span><div><strong>Isabella’s</strong><small>Central de carta</small></div><button class="sidebar-close" id="sidebar-close" type="button" aria-label="Cerrar menú">×</button></div>
+      <div class="sidebar-brand"><img src="../../central/assets/isabella-logo-transparent.png" alt="Isabella’s" width="170" height="55"><button class="sidebar-close" id="sidebar-close" type="button" aria-label="Cerrar menú">×</button></div>
       <div class="sidebar-divider"></div><p class="sidebar-caption">Administración</p>
-      <nav class="main-nav" aria-label="Secciones"><a class="sidebar-staff-link" href="../#productos"><span class="nav-symbol" aria-hidden="true">◈</span> Productos</a><a class="sidebar-staff-link" href="../#categorias"><span class="nav-symbol" aria-hidden="true">▤</span> Categorías</a><a class="sidebar-staff-link is-active" href="./" aria-current="page"><span class="nav-symbol" aria-hidden="true">◦</span> Administración</a></nav>
+      <nav class="main-nav" aria-label="Secciones"><a class="sidebar-staff-link" href="../#productos"><span class="nav-symbol" aria-hidden="true">◈</span> Productos</a><a class="sidebar-staff-link" href="../#categorias"><span class="nav-symbol" aria-hidden="true">▤</span> Categorías</a><a class="sidebar-staff-link" href="../#avisos">Avisos de la carta</a><a class="sidebar-staff-link" href="../#impreso">Menú impreso</a><a class="sidebar-staff-link is-active" href="./" aria-current="page"><span class="nav-symbol" aria-hidden="true">◦</span> Administración</a></nav>
       <div class="sidebar-foot"><span class="online-dot"></span> Vista previa local<br><small>Los cambios se guardan en este equipo.</small></div>
     </aside>
     <div class="workspace"><header class="topbar"><div class="topbar-start"><button class="sidebar-toggle" id="sidebar-toggle" type="button" aria-controls="admin-sidebar" aria-expanded="false"><span class="sidebar-toggle__icon" aria-hidden="true"><i></i><i></i><i></i></span> Menú</button><div class="breadcrumbs"><a href="../../central/">Restaurantes</a> <span>/</span> Isabella’s <span>/</span> <strong>Administración</strong></div></div><div class="top-actions"><a href="../../" target="_blank" rel="noopener noreferrer">Ver carta ↗</a><button id="logout" type="button">Salir</button></div></header>

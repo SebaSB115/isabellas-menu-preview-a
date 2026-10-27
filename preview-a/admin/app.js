@@ -1,3 +1,4 @@
+import { formSnapshot, tablerComponents } from './form-state.js';
 const $ = id => document.getElementById(id);
 const languages = [['es','Español'],['en','English'],['de','Deutsch'],['ar','العربية · RTL'],['he','עברית · RTL']];
 const originalPages = [['1-PRE.webp','Ensaladas y sopas'],['2-PRE.webp','Entradas'],['7-PRE.webp','Focaccia y strombolis'],['ALL-4-D.webp','Pastas y risotto'],['4-PRE.webp','Pastas adicionales'],['ALL-4-C.webp','Carnes'],['ALL-4-A.webp','Cocteles clásicos'],['ALL-4-B.webp','Café']];
@@ -10,11 +11,18 @@ let csrf = '';
 let permissions = [];
 let role = 'staff';
 let catalog = null;
-let tab = location.hash === '#categorias' ? 'categories' : 'products';
+let tab = ({'#categorias':'categories','#avisos':'content','#impreso':'print'})[location.hash] || 'products';
 let selectedCategory = null;
 let selectedProduct = null;
 let draft = null;
 let pendingArt;
+let pendingPhoto;
+let pendingEditorialPhoto;
+let baseline = '';
+let saving = false;
+let uploading = false;
+let printLanguage = 'es';
+let printVersion = null;
 let dirty = false;
 let noticeTimer;
 let editorView = 'list';
@@ -27,7 +35,7 @@ const isUnpriced = item => item.price == null && !item.options?.some(option => o
 async function api(path, options = {}) {
   const response = await fetch(path, { credentials:'same-origin', cache:'no-store', ...options, headers:{ ...(options.body instanceof ArrayBuffer ? {} : { 'content-type':'application/json' }), ...(csrf ? { 'x-csrf-token':csrf } : {}), ...options.headers } });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || 'No se pudo completar la operación.');
+  if (!response.ok) throw Object.assign(new Error(data.error || 'No se pudo completar la operación.'), {status:response.status});
   return data;
 }
 function notice(message, error = false) {
@@ -42,15 +50,30 @@ function notice(message, error = false) {
 function showLogin() { $('login-screen').hidden = false; $('app-shell').hidden = true; document.querySelector('.skip-link').href = '#acceso'; }
 function showApp() {
   const products = permissions.includes('isabella.products');
+  for (const name of ['content','print']) document.querySelector(`[data-tab="${name}"]`).hidden = !permissions.includes(`isabella.${name}`);
   const categories = permissions.includes('isabella.categories');
   document.querySelector('[data-tab="products"]').hidden = !products;
   document.querySelector('[data-tab="categories"]').hidden = !categories;
   if ($('staff-link')) $('staff-link').hidden = role !== 'owner';
   if (tab === 'products' && !products) tab = 'categories';
   if (tab === 'categories' && !categories) tab = 'products';
+  if (!permissions.includes(`isabella.${tab}`)) tab = ['products','categories','content','print'].find(name => permissions.includes(`isabella.${name}`)) || 'products';
   $('login-screen').hidden = true; $('app-shell').hidden = false; document.querySelector('.skip-link').href = '#main'; render();
 }
-function guard() { return !dirty || confirm('Hay cambios sin guardar. ¿Descartarlos?'); }
+async function guard() {
+  if (saving || uploading) { notice('Espera a que termine la operación en curso.'); return false; }
+  if (!dirty) return true;
+  const dialog=$('changes-dialog');
+  const choice=await new Promise(resolve=>{
+    const finish=value=>{dialog.removeEventListener('click',click);dialog.removeEventListener('cancel',cancel);dialog.close();resolve(value);};
+    const click=event=>{const value=event.target.closest('[data-choice]')?.dataset.choice;if(value)finish(value);};
+    const cancel=event=>{event.preventDefault();finish('stay');};
+    dialog.addEventListener('click',click);dialog.addEventListener('cancel',cancel);dialog.showModal();
+  });
+  if(choice==='stay')return false;
+  if(choice==='save')return performSave($('edit-form'));
+  dirty=false;return true;
+}
 function currentCategory() { return catalog.categories.find(category => category.id === selectedCategory); }
 function currentProduct() { return catalog.categories.flatMap(category => category.items).find(item => item.id === selectedProduct); }
 function countProducts() { return catalog.categories.reduce((count, category) => count + category.items.length, 0); }
@@ -68,6 +91,11 @@ function setWorkspaceView(view, focus = false) {
 
 function render() {
   if (!catalog) return;
+  const special = ['content','print'].includes(tab);
+  document.querySelector('.content-layout').hidden = special;
+  $('tools-panel').hidden = !special;
+  if (special) { renderTools(); return; }
+  $('tools-panel').replaceChildren();
   const isProduct = tab === 'products';
   $('breadcrumb-current').textContent = isProduct ? 'Productos' : 'Categorías y fondos';
   $('page-title').textContent = isProduct ? 'Productos' : 'Categorías y fondos';
@@ -88,7 +116,7 @@ function render() {
     button.classList.toggle('is-active', active);
     button.setAttribute('aria-pressed', String(active));
   });
-  renderList(); renderEditor();
+  renderList(); renderEditor(); tablerComponents();
 }
 function renderList() {
   const search = normalizeSearch($('search').value);
@@ -131,10 +159,12 @@ function productArtMarkup(categoryId) {
   const url = art?.src ? assetUrl(art.src) : originalArt(category.source);
   return `<div class="product-art"><img class="product-art__image" src="${escapeHtml(url)}" alt="Arte de la categoría ${escapeHtml(category.title.es)}" style="object-position:${art?.x ?? 50}% ${art?.y ?? 50}%" /><div><strong class="product-art__name">${escapeHtml(category.title.es)}</strong><p>El plato utiliza el arte de su categoría. No tiene imagen individual en este editor.</p></div></div>`;
 }
-function productTranslationsMarkup(item, creating) {
-  if (creating) return '<p class="helper">Los otros cuatro idiomas se generarán al guardar el producto.</p>';
-  const rows = languages.slice(1).map(([code, label]) => `<div class="translation-row"><dt>${escapeHtml(label)}</dt><dd lang="${code}" dir="${code === 'ar' || code === 'he' ? 'rtl' : 'ltr'}">${item.name?.[code] ? escapeHtml(item.name[code]) : 'Pendiente de traducción'}${item.description?.[code] ? `<small>${escapeHtml(item.description[code])}</small>` : ''}</dd></div>`).join('');
-  return `<p class="helper">Textos guardados para la carta. Se actualizan al guardar cambios en español.</p><dl class="product-translations">${rows}</dl>`;
+function productPhotoMarkup(item) {
+  const photo=pendingPhoto===undefined?item.photo:pendingPhoto;
+  const source=photo?.src?escapeHtml(assetUrl(photo.src)):'';
+  const focus=`${photo?.x ?? 50}% ${photo?.y ?? 50}%`;
+  const original=photo?.original?escapeHtml(assetUrl(photo.original)):'';
+  return `<details class="form-section product-detail" id="product-image"><summary><span>Imagen</span><small>Fotografía del plato</small></summary><div class="product-detail__body product-image-controls"><p class="helper">La fotografía individual aparece en la ficha del plato, no en la lista. Ajusta el encuadre antes de guardar.</p><div class="product-photo-previews" id="product-photo-previews" ${photo?'':'hidden'}><figure class="product-photo-frame"><img id="product-photo-preview" ${source?`src="${source}"`:''} alt="Vista previa de la fotografía en escritorio" style="object-position:${focus}"><figcaption>Escritorio</figcaption></figure><figure class="product-photo-frame product-photo-frame--mobile"><img id="product-photo-mobile-preview" ${source?`src="${source}"`:''} alt="Vista previa de la fotografía en móvil" style="object-position:${focus}"><figcaption>Móvil</figcaption></figure></div><div class="product-photo-tools"><label class="field"><span>Fotografía del producto</span><input id="product-photo-file" type="file" accept="image/jpeg,image/png,image/webp"><small>JPG, PNG o WebP · mínimo 500 × 500 px · máximo 10 MB</small></label><fieldset class="focus-controls product-focus-controls" id="product-focus-controls" ${photo?'':'disabled'}><legend>Punto focal</legend><p class="helper">Elige qué parte del plato debe permanecer visible en ambos formatos.</p><div class="range-row"><label for="product-focus-x">Horizontal</label><input id="product-focus-x" type="range" min="0" max="100" value="${photo?.x ?? 50}"><output id="product-focus-x-value" for="product-focus-x">${photo?.x ?? 50}%</output></div><div class="range-row"><label for="product-focus-y">Vertical</label><input id="product-focus-y" type="range" min="0" max="100" value="${photo?.y ?? 50}"><output id="product-focus-y-value" for="product-focus-y">${photo?.y ?? 50}%</output></div></fieldset><a class="text-button" id="product-original-link" ${original?`href="${original}"`:''} download ${original?'':'hidden'}>Descargar archivo original</a><button type="button" class="text-button" id="remove-product-photo" ${photo?'':'hidden'}>Quitar fotografía</button></div></div></details>`;
 }
 function renderProductEditor() {
   const item = draft?.type === 'product' ? draft.value : currentProduct();
@@ -143,9 +173,8 @@ function renderProductEditor() {
   const category = creating ? selectedCategory : catalog.categories.find(group => group.items.some(entry => entry.id === item.id))?.id;
   const optionSummary = [item.options?.length ? `${item.options.length} variantes` : '', item.addon ? '1 adicional' : ''].filter(Boolean).join(' · ') || 'Variantes y adicionales';
   $('editor-panel').innerHTML = `<form id="edit-form" data-kind="product"><button class="editor-back text-button" type="button" data-back-to-list>← Volver a productos</button><div class="editor-heading"><div><p class="editor-eyebrow">${creating ? 'Nuevo producto' : 'Editar producto'}</p><h2 id="editor-title" tabindex="-1">${creating ? 'Añadir plato' : escapeHtml(item.name.es)}</h2></div><span class="status-pill">${item.visible === false ? 'Oculto' : 'Visible'}</span></div>
-    <section class="form-section product-information" aria-labelledby="product-information-title"><h3 id="product-information-title">Información principal</h3><div class="field-grid">${field('Nombre en español', 'name-es', item.name?.es || '', { required:true, full:true, max:150 })}<label class="field"><span>Categoría *</span><select name="category" required>${catalog.categories.map(group => `<option value="${escapeHtml(group.id)}" ${group.id === category ? 'selected' : ''}>${escapeHtml(group.title.es)}</option>`).join('')}</select></label>${field('Precio en ₡', 'price', item.price ?? '', { type:'number', min:0, max:10000000, placeholder:'Pendiente de confirmar' })}${field('Descripción en español', 'description-es', item.description?.es || '', { required:true, full:true, type:'textarea', max:1000 })}<label class="toggle-field field--full"><input type="checkbox" name="visible" ${item.visible === false ? '' : 'checked'} /><span>Visible en la carta</span></label></div></section>
-    <details class="form-section product-detail" id="product-image"><summary><span>Imagen</span><small>Arte de la categoría</small></summary><div class="product-detail__body" id="product-art-preview">${productArtMarkup(category)}</div></details>
-    <details class="form-section product-detail" id="product-translations"><summary><span>Traducciones</span><small>Consulta de idiomas</small></summary><div class="product-detail__body">${productTranslationsMarkup(item, creating)}</div></details>
+    <section class="form-section product-information" aria-labelledby="product-information-title"><h3 id="product-information-title">Información principal</h3><div class="field-grid">${field('Nombre en español', 'name-es', item.name?.es || '', { required:true, full:true, max:150 })}<label class="field"><span>Categoría *</span><select name="category" required>${catalog.categories.map(group => `<option value="${escapeHtml(group.id)}" ${group.id === category ? 'selected' : ''}>${escapeHtml(group.title.es)}</option>`).join('')}</select></label>${field('Precio en ₡', 'price', item.price ?? '', { type:'number', min:0, max:10000000, placeholder:'Pendiente de confirmar' })}${field('Descripción en español', 'description-es', item.description?.es || '', { required:true, full:true, type:'textarea', max:1000 })}<label class="toggle-field field--full"><input type="checkbox" name="visible" ${item.visible === false ? '' : 'checked'} /><span>Visible en la carta</span></label><label class="toggle-field field--full"><input type="checkbox" name="available" ${item.available===false?'':'checked'}><span>Disponible hoy</span></label><label class="toggle-field field--full"><input type="checkbox" name="detailEnabled" ${item.detailEnabled!==false?'checked':''}><span>Permitir abrir el detalle del plato</span></label></div></section>
+    ${productPhotoMarkup(item)}
     <details class="form-section product-detail product-options" id="product-options" ${item.options?.length || item.addon ? 'open' : ''}><summary><span>Opciones</span><small>${escapeHtml(optionSummary)}</small></summary><div class="product-detail__body"><div class="product-option-group"><h4>Variantes con precio propio</h4><p>Para opciones como pollo y carne.</p><div id="options-list">${(item.options || []).map(optionMarkup).join('')}</div><button class="text-button" type="button" id="add-option">+ Añadir variante</button></div><div class="product-option-group"><h4>Adicional</h4><label class="toggle-field"><input type="checkbox" id="has-addon" ${item.addon ? 'checked' : ''} /><span>Este plato ofrece un adicional</span></label><div id="addon-fields" ${item.addon ? '' : 'hidden'}><div class="field-grid">${field('Precio del adicional en ₡', 'addon-price', item.addon?.price ?? '', { type:'number', min:0, max:10000000 })}${field('Nombre en español', 'addon-es', item.addon?.label?.es || '')}</div></div></div></div></details>
     <p class="product-form-error" id="product-form-error" role="alert" hidden></p><div class="form-actions product-form-actions">${creating ? '<button class="text-button" type="button" data-cancel>Cancelar</button>' : '<button class="danger-button" type="button" data-delete>Eliminar producto</button>'}<span class="product-edit-state" id="product-edit-state" role="status" aria-live="polite">${escapeHtml(productFeedback)}</span><button class="primary-button" type="submit">${creating ? 'Crear producto' : 'Guardar cambios'}</button></div></form>`;
 }
@@ -154,6 +183,14 @@ function imagePreview(category, art) {
   const position = `${art?.x ?? 50}% ${art?.y ?? 50}%`;
   const name = escapeHtml(category.title.es || 'la nueva categoría');
   return `<div class="image-preview"><figure class="image-frame desktop"><img class="preview-image" src="${escapeHtml(url)}" style="object-position:${position}" alt="Arte de ${name} en escritorio" /><figcaption>Escritorio</figcaption></figure><figure class="image-frame mobile"><img class="preview-image" src="${escapeHtml(url)}" style="object-position:${position}" alt="Arte de ${name} en móvil" /><figcaption>Móvil</figcaption></figure></div>`;
+}
+const editorialSamples = new Set(['salads','starters','focaccia','stromboli','pasta','meats','cocktails','coffee']);
+function editorialPhotoMarkup(category) {
+  const photo = pendingEditorialPhoto === undefined ? category.editorialPhoto : pendingEditorialPhoto;
+  const sample = editorialSamples.has(category.id) ? `../design-lab/assets/reference-v2/${category.id}-720.webp` : '';
+  const src = photo?.src ? assetUrl(photo.srcSmall || photo.src) : sample;
+  const focus = `${photo?.x ?? 50}% ${photo?.y ?? 50}%`;
+  return `<section class="form-section category-editorial-photo" aria-labelledby="editorial-photo-title"><h3 id="editorial-photo-title">Fotografía de la carta V2</h3><p class="helper">Aparece junto a los platos de esta categoría. Las imágenes de muestra no son fotografías oficiales.</p><div class="category-editorial-photo__layout"><div class="category-editorial-photo__previews" id="editorial-photo-previews" ${src?'':'hidden'}><figure><img class="editorial-photo-preview" ${src?`src="${escapeHtml(src)}"`:''} alt="Vista previa de escritorio" style="object-position:${focus}"><figcaption>Escritorio · vertical</figcaption></figure><figure><img class="editorial-photo-preview editorial-photo-preview--mobile" ${src?`src="${escapeHtml(src)}"`:''} alt="Vista previa de móvil" style="object-position:${focus}"><figcaption>Móvil · horizontal</figcaption></figure></div><div class="category-editorial-photo__controls"><label class="field"><span>Sustituir fotografía</span><input id="editorial-photo-file" type="file" accept="image/jpeg,image/png,image/webp"><small>JPG, PNG o WebP · máximo 10 MB</small></label><fieldset class="focus-controls" id="editorial-focus-controls" ${photo?'':'disabled'}><legend>Encuadre de la foto propia</legend><div class="range-row"><label for="editorial-focus-x">Horizontal</label><input id="editorial-focus-x" type="range" min="0" max="100" value="${photo?.x ?? 50}"><output id="editorial-focus-x-value" for="editorial-focus-x">${photo?.x ?? 50}%</output></div><div class="range-row"><label for="editorial-focus-y">Vertical</label><input id="editorial-focus-y" type="range" min="0" max="100" value="${photo?.y ?? 50}"><output id="editorial-focus-y-value" for="editorial-focus-y">${photo?.y ?? 50}%</output></div></fieldset><button class="text-button" type="button" id="remove-editorial-photo" ${photo?'':'hidden'}>Usar imagen de muestra</button></div></div></section>`;
 }
 function renderCategoryEditor() {
   const category = draft?.type === 'category' ? draft.value : currentCategory();
@@ -167,8 +204,22 @@ function renderCategoryEditor() {
     <section class="form-section category-information ${creating ? 'category-information--new' : ''}" aria-labelledby="category-information-title"><h3 id="category-information-title">Información de la categoría</h3><div class="field-grid">${field('Nombre en español', 'title-es', category.title?.es || '', { required:true, max:100 })}${creating ? `<label class="field"><span>Posición en la carta</span><select name="position">${positionOptions}</select></label>` : ''}<label class="toggle-field field--full"><input type="checkbox" name="visible" ${category.visible === false ? '' : 'checked'} /><span>Visible en la carta</span></label></div>${creating ? '' : `<div class="category-order"><div><strong>Orden en la carta</strong><small>Posición ${index + 1} de ${catalog.categories.length}</small></div><div class="category-order__actions"><button class="text-button" type="button" data-move="-1" ${index <= 0 ? 'disabled' : ''}>↑ Subir</button><button class="text-button" type="button" data-move="1" ${index >= catalog.categories.length - 1 ? 'disabled' : ''}>↓ Bajar</button></div></div>`}</section>
     <section class="form-section category-art" aria-labelledby="category-art-title"><div class="section-heading"><div><h3 id="category-art-title">Arte de la categoría</h3><p>Vista previa de la ilustración que acompaña a los platos.</p></div></div><div class="category-art-workspace"><div class="category-art-stage"><h4>Vista previa</h4>${imagePreview(category, art)}</div><div class="category-art-controls"><h4>Imagen y encuadre</h4><label class="field"><span>Página de origen</span><select name="source">${originalPages.map(([file,label]) => `<option value="${file}" ${category.source === file ? 'selected' : ''}>${escapeHtml(label)}</option>`).join('')}</select></label><div class="image-upload"><label class="field"><span>Usar imagen propia</span><input type="file" id="art-file" accept="image/jpeg,image/png,image/webp" /><small>JPG, PNG o WebP · hasta 10 MB</small></label><button class="text-button" type="button" id="remove-art" ${art ? '' : 'hidden'}>Usar arte original</button></div><fieldset class="focus-controls" id="focus-controls" ${art ? '' : 'disabled'}><legend>Encuadre</legend><p class="helper">Ajusta la imagen propia en ambas vistas.</p><div class="range-row"><label for="focus-x">Horizontal</label><input id="focus-x" type="range" min="0" max="100" value="${art?.x ?? 50}" /><output id="focus-x-value" for="focus-x">${art?.x ?? 50}%</output></div><div class="range-row"><label for="focus-y">Vertical</label><input id="focus-y" type="range" min="0" max="100" value="${art?.y ?? 50}" /><output id="focus-y-value" for="focus-y">${art?.y ?? 50}%</output></div></fieldset></div></div></section>
     <p class="product-form-error" id="category-form-error" role="alert" hidden></p><div class="form-actions category-form-actions">${creating ? '<button class="text-button" type="button" data-cancel>Cancelar</button>' : ''}<span class="product-edit-state" id="category-edit-state" role="status" aria-live="polite">${escapeHtml(categoryFeedback)}</span><button class="primary-button" type="submit">${creating ? 'Crear categoría' : 'Guardar cambios'}</button></div></form>${creating ? '' : `<section class="category-remove" aria-labelledby="category-remove-title"><h3 id="category-remove-title">Eliminar categoría</h3>${category.items.length ? `<p>Esta categoría contiene ${category.items.length} ${category.items.length === 1 ? 'producto' : 'productos'}. Reasígnalos antes de eliminarla; se conservarán íntegros.</p>${destinations.length ? `<label class="field"><span>Mover productos a</span><select id="reassign-category" aria-label="Mover productos a" aria-describedby="reassign-help"><option value="">Selecciona otra categoría</option>${destinations.map(group => `<option value="${escapeHtml(group.id)}">${escapeHtml(group.title.es)}${group.visible === false ? ' · oculta' : ''}</option>`).join('')}</select><small id="reassign-help">Si eliges una categoría oculta, sus productos dejarán de verse en la carta hasta que la hagas visible.</small><small class="field-error" id="reassign-error" role="alert" hidden>Elige una categoría de destino.</small></label>` : '<p>Crea otra categoría antes de poder reasignar estos productos.</p>'}` : '<p>Esta categoría está vacía.</p>'}<button class="danger-button" type="button" data-delete ${category.items.length && !destinations.length ? 'disabled' : ''}>Eliminar categoría</button></section>`}`;
+  $('editor-panel').querySelector('.category-art').insertAdjacentHTML('beforebegin', editorialPhotoMarkup(category));
 }
-function renderEditor() { if (tab === 'products') renderProductEditor(); else renderCategoryEditor(); }
+function snapshot() {
+  const value = draft?.value || (tab === 'products' ? currentProduct() : currentCategory());
+  const photo=pendingPhoto===undefined?value?.photo:pendingPhoto;
+  const editorial = pendingEditorialPhoto === undefined ? value?.editorialPhoto : pendingEditorialPhoto;
+  return formSnapshot($('edit-form'), { art:tab==='categories' ? (pendingArt===undefined ? value?.art || null : pendingArt || null) : null, editorial:tab==='categories'&&editorial ? {...editorial,x:Number($('editorial-focus-x')?.value ?? editorial.x),y:Number($('editorial-focus-y')?.value ?? editorial.y)} : null, photo:tab==='products'&&photo ? {...photo,x:Number($('product-focus-x')?.value ?? photo.x),y:Number($('product-focus-y')?.value ?? photo.y)} : null });
+}
+function prepareForm() {
+  const form=$('edit-form');if(!form)return;
+  baseline=snapshot();dirty=false;
+  const actions=form.querySelector('.form-actions');
+  if(actions&&!actions.querySelector('[data-discard]')) actions.insertAdjacentHTML('afterbegin','<button type="button" class="text-button" data-discard hidden>Descartar cambios</button>');
+  tablerComponents();markProductDirty();
+}
+function renderEditor() { if (tab === 'products') renderProductEditor(); else renderCategoryEditor(); prepareForm(); }
 function readSpanish(form, prefix, previous) { return { ...blankLocales(), ...previous, es:String(form.elements[`${prefix}-es`]?.value || '').trim() }; }
 function readPrice(value) { return value === '' ? null : Number(value); }
 function showProductError(control, message) {
@@ -189,6 +240,7 @@ function showProductError(control, message) {
       detail.textContent = message;
       control.setAttribute('aria-describedby', detail.id);
     }
+    for (let parent=control.parentElement;parent;parent=parent.parentElement) if(parent.tagName==='DETAILS')parent.open=true;
     control.focus();
   }
 }
@@ -201,14 +253,33 @@ function clearProductError(control) {
   if (error) { error.textContent = ''; error.hidden = true; }
 }
 function markProductDirty() {
-  dirty = true;
-  if (tab === 'products') productFeedback = ''; else categoryFeedback = '';
-  const state = $(`${tab === 'products' ? 'product' : 'category'}-edit-state`);
-  if (state) state.textContent = 'Cambios sin guardar';
+  dirty = snapshot() !== baseline;
+  const form=$('edit-form'), state=form?.querySelector('.product-edit-state');
+  if(state) state.textContent=dirty?'Cambios sin guardar':(tab==='products'?productFeedback:categoryFeedback)||'Sin cambios pendientes';
+  const save=form?.querySelector('[type="submit"]');if(save)save.disabled=!dirty||saving||uploading;
+  const discard=form?.querySelector('[data-discard]');if(discard)discard.hidden=!dirty;
+  tablerComponents(form || document);
+}
+async function performSave(form) {
+  if(!form||saving||uploading||!dirty)return false;
+  if(!form.reportValidity())return false;
+  const button=form.querySelector('[type="submit"]'), label=button.textContent;
+  saving=true;button.disabled=true;button.textContent='Guardando…';form.setAttribute('aria-busy','true');
+  try {
+    if(tab==='products')await saveProduct(form);
+    else if(tab==='categories')await saveCategory(form);
+    else {
+      const a={enabled:form.elements.enabled.checked,moving:form.elements.moving.checked,es:form.elements.es.value.trim(),en:form.elements.en.value.trim()};
+      if(a.enabled&&(!a.es||!a.en)){showProductError(form.elements[!a.es?'es':'en'],'Completa el aviso en ambos idiomas antes de mostrarlo.');return false;}
+      catalog=await api('/api/admin/content',{method:'PUT',body:JSON.stringify({version:catalog.version,settings:{announcement:a,publicUrl:form.elements.publicUrl.value.trim()}})});dirty=false;categoryFeedback='Aviso guardado.';renderTools();
+    }
+    return !dirty;
+  } catch(error) { notice(error.message + (error.status===409?' Tus cambios permanecen en el formulario. Copia lo editado antes de recargar.':''),true);return false; }
+  finally { saving=false;if(form.isConnected){form.removeAttribute('aria-busy');button.textContent=label;}markProductDirty(); }
 }
 async function commit(next, message) {
   const saved = await api('/api/admin/menu', { method:'PUT', body:JSON.stringify({ version:catalog.version, categories:next }) });
-  catalog = saved; dirty = false; draft = null; pendingArt = undefined; notice(message); render();
+  catalog = saved; dirty = false; draft = null; pendingArt = undefined; pendingPhoto = undefined; pendingEditorialPhoto = undefined; notice(message); render();
 }
 async function saveProduct(form) {
   const old = draft?.type === 'product' ? draft.value : currentProduct();
@@ -223,7 +294,10 @@ async function saveProduct(form) {
     const card = form.querySelectorAll('[data-option]')[invalidOption];
     return showProductError(card.querySelector(options[invalidOption].price === null ? '[name="option-price"]' : '[name="option-es"]'), `Completa el nombre y el precio de la variante ${invalidOption + 1}.`);
   }
-  const nextItem = { ...old, name, description, price:readPrice(form.elements.price.value), visible:form.elements.visible.checked };
+  const manualEnglish=Boolean(old.manualEnglish && name.es===String(old.name?.es||'').trim() && description.es===String(old.description?.es||'').trim());
+  const nextItem = { ...old, name, description, price:readPrice(form.elements.price.value), visible:form.elements.visible.checked, available:form.elements.available.checked, detailEnabled:form.elements.detailEnabled.checked, manualEnglish };
+  const photo=pendingPhoto===undefined?old.photo:pendingPhoto;
+  if(photo)nextItem.photo={...photo,x:Number($('product-focus-x').value),y:Number($('product-focus-y').value)};else delete nextItem.photo;
   if (options.length) nextItem.options = options; else delete nextItem.options;
   if ($('has-addon').checked) {
     const addonPrice = readPrice(form.elements['addon-price'].value);
@@ -254,6 +328,9 @@ async function saveCategory(form) {
   const nextCategory = { ...old, title, source:form.elements.source.value, visible:form.elements.visible.checked };
   if (art) nextCategory.art = { ...art, x:Number($('focus-x').value), y:Number($('focus-y').value) };
   else delete nextCategory.art;
+  const editorial = pendingEditorialPhoto === undefined ? old.editorialPhoto : pendingEditorialPhoto;
+  if (editorial) nextCategory.editorialPhoto = { ...editorial, x:Number($('editorial-focus-x').value), y:Number($('editorial-focus-y').value) };
+  else delete nextCategory.editorialPhoto;
   const next = structuredClone(catalog.categories);
   const index = next.findIndex(category => category.id === nextCategory.id);
   if (index < 0) {
@@ -261,7 +338,6 @@ async function saveCategory(form) {
     if (!Number.isInteger(position) || position < 0 || position > next.length) return showProductError(form.elements.position, 'Elige una posición válida.');
     next.splice(position, 0, nextCategory);
   } else next[index] = nextCategory;
-  if (!confirm(`¿${index < 0 ? 'Crear' : 'Guardar los cambios de'} la categoría «${title.es}»?`)) return;
   await commit(next, draft?.type === 'category' ? 'Categoría creada.' : 'Categoría y fondo actualizados.');
   selectedCategory = nextCategory.id; categoryFeedback = 'Cambios guardados.'; render();
 }
@@ -316,6 +392,38 @@ function updateArtPreview() {
   $('focus-x-value').textContent = `${$('focus-x').value}%`;
   $('focus-y-value').textContent = `${$('focus-y').value}%`;
 }
+function updateEditorialPhotoPreview() {
+  const category = draft?.type === 'category' ? draft.value : currentCategory();
+  const photo = pendingEditorialPhoto === undefined ? category.editorialPhoto : pendingEditorialPhoto;
+  const sample = editorialSamples.has(category.id) ? `../design-lab/assets/reference-v2/${category.id}-720.webp` : '';
+  const src = photo?.src ? assetUrl(photo.srcSmall || photo.src) : sample;
+  $('editorial-photo-previews').hidden = !src;
+  $('editorial-focus-controls').disabled = !photo;
+  $('remove-editorial-photo').hidden = !photo;
+  for (const image of document.querySelectorAll('.editorial-photo-preview')) {
+    if (src) image.src = src;
+    image.style.objectPosition = `${$('editorial-focus-x').value}% ${$('editorial-focus-y').value}%`;
+  }
+  $('editorial-focus-x-value').textContent = `${$('editorial-focus-x').value}%`;
+  $('editorial-focus-y-value').textContent = `${$('editorial-focus-y').value}%`;
+}
+function updateProductPhotoPreview() {
+  const item=draft?.type==='product'?draft.value:currentProduct();
+  const photo=pendingPhoto===undefined?item?.photo:pendingPhoto;
+  const previews=$('product-photo-previews');
+  previews.hidden=!photo;
+  $('product-focus-controls').disabled=!photo;
+  $('remove-product-photo').hidden=!photo;
+  const original=$('product-original-link');
+  original.hidden=!photo?.original;
+  if(photo?.original)original.href=assetUrl(photo.original);
+  for(const image of previews.querySelectorAll('img')){
+    if(photo?.src)image.src=assetUrl(photo.src);
+    image.style.objectPosition=`${$('product-focus-x').value}% ${$('product-focus-y').value}%`;
+  }
+  $('product-focus-x-value').textContent=`${$('product-focus-x').value}%`;
+  $('product-focus-y-value').textContent=`${$('product-focus-y').value}%`;
+}
 
 $('login-form').addEventListener('submit', async event => {
   event.preventDefault(); $('login-message').textContent = '';
@@ -330,10 +438,10 @@ $('toggle-password').addEventListener('click', () => {
   $('toggle-password').textContent = visible ? 'Ocultar' : 'Mostrar';
   $('toggle-password').setAttribute('aria-pressed', String(visible));
 });
-$('logout').addEventListener('click', async () => { if (!guard()) return; await api('/api/admin/logout', { method:'POST' }).catch(() => {}); csrf = ''; catalog = null; showLogin(); });
-document.querySelector('.main-nav').addEventListener('click', event => {
-  const button = event.target.closest('[data-tab]'); if (!button || !guard()) return;
-  tab = button.dataset.tab; draft = null; pendingArt = undefined; dirty = false; productFeedback = ''; categoryFeedback = ''; editorView = 'list'; unpricedOnly = false; $('search').value = ''; render();
+$('logout').addEventListener('click', async () => { if (!await guard()) return; await api('/api/admin/logout', { method:'POST' }).catch(() => {}); csrf = ''; catalog = null; showLogin(); });
+document.querySelector('.main-nav').addEventListener('click', async event => {
+  const button = event.target.closest('[data-tab]'); if (!button || !await guard()) return;
+  tab = button.dataset.tab; draft = null; pendingArt = undefined; pendingPhoto = undefined; pendingEditorialPhoto = undefined; dirty = false; productFeedback = ''; categoryFeedback = ''; editorView = 'list'; unpricedOnly = false; $('search').value = ''; render();
   closeSidebar();
   $('page-title').focus();
 });
@@ -395,22 +503,22 @@ $('unpriced-filter').addEventListener('click', () => {
   $('unpriced-filter').setAttribute('aria-pressed', String(unpricedOnly));
   renderList();
 });
-$('catalog-list').addEventListener('click', event => {
+$('catalog-list').addEventListener('click', async event => {
   const itemButton = event.target.closest('[data-product]');
   const categoryButton = event.target.closest('[data-category]');
-  if ((!itemButton && !categoryButton) || !guard()) return;
+  if ((!itemButton && !categoryButton) || !await guard()) return;
   selectedProduct = itemButton?.dataset.product || selectedProduct;
   selectedCategory = categoryButton?.dataset.category || selectedCategory;
   if (itemButton) selectedCategory = catalog.categories.find(category => category.items.some(item => item.id === selectedProduct))?.id || selectedCategory;
-  draft = null; pendingArt = undefined; dirty = false; productFeedback = ''; categoryFeedback = ''; render();
+  draft = null; pendingArt = undefined; pendingPhoto = undefined; pendingEditorialPhoto = undefined; dirty = false; productFeedback = ''; categoryFeedback = ''; render();
   setWorkspaceView('editor', true);
 });
-function startNew() {
-  if (!guard()) return;
+async function startNew() {
+  if (!await guard()) return;
   if (tab === 'products' && !catalog.categories.length) { notice('Crea una categoría antes de añadir productos.', true); return; }
-  draft = tab === 'products' ? { type:'product', value:{ id:`product-${crypto.randomUUID().slice(0,8)}`, name:blankLocales(), description:blankLocales(), price:null, visible:true } } : { type:'category', value:{ id:`category-${crypto.randomUUID().slice(0,8)}`, title:blankLocales(), source:'1-PRE.webp', items:[], visible:true } };
+  draft = tab === 'products' ? { type:'product', value:{ id:`product-${crypto.randomUUID().slice(0,8)}`, name:blankLocales(), description:blankLocales(), price:null, visible:true, detailEnabled:true } } : { type:'category', value:{ id:`category-${crypto.randomUUID().slice(0,8)}`, title:blankLocales(), source:'1-PRE.webp', items:[], visible:true } };
   if (tab === 'products') selectedCategory ||= catalog.categories[0].id;
-  pendingArt = undefined; dirty = false; productFeedback = ''; categoryFeedback = ''; renderEditor();
+  pendingArt = undefined; pendingPhoto = undefined; pendingEditorialPhoto = undefined; dirty = false; productFeedback = ''; categoryFeedback = ''; renderEditor();
   setWorkspaceView('editor', true);
 }
 $('new-button').addEventListener('click', startNew);
@@ -422,65 +530,123 @@ $('editor-panel').addEventListener('invalid', event => {
     showProductError(control, message);
   }
 }, true);
-$('editor-panel').addEventListener('submit', async event => {
-  if (event.target.id !== 'edit-form') return; event.preventDefault();
-  const button = event.target.querySelector('[type="submit"]');
-  const originalLabel = button.textContent;
-  button.disabled = true;
-  button.textContent = 'Guardando…';
-  event.target.setAttribute('aria-busy', 'true');
-  try { if (tab === 'products') await saveProduct(event.target); else await saveCategory(event.target); }
-  catch (error) { notice(error.message, true); }
-  finally { if (event.target.isConnected) event.target.removeAttribute('aria-busy'); if (button.isConnected) { button.disabled = false; button.textContent = originalLabel; } }
-});
-$('editor-panel').addEventListener('input', event => {
+document.addEventListener('submit', async event => { if(event.target.id!=='edit-form')return;event.preventDefault();await performSave(event.target); });
+document.addEventListener('input', event => { if(!event.target.closest('#edit-form'))return;
   if (event.target.id === 'reassign-category') return;
   if (event.target.id === 'focus-x' || event.target.id === 'focus-y') updateArtPreview();
-  if (event.target.id !== 'art-file') { clearProductError(event.target); markProductDirty(); }
+  if (event.target.id === 'editorial-focus-x' || event.target.id === 'editorial-focus-y') updateEditorialPhotoPreview();
+  if (event.target.id === 'product-focus-x' || event.target.id === 'product-focus-y') updateProductPhotoPreview();
+  if (!['art-file','product-photo-file','editorial-photo-file'].includes(event.target.id)) { if(event.target.validity.valid) clearProductError(event.target); markProductDirty(); }
 });
 $('editor-panel').addEventListener('change', async event => {
   if (event.target.id === 'reassign-category') { event.target.removeAttribute('aria-invalid'); event.target.setAttribute('aria-describedby', 'reassign-help'); $('reassign-error').hidden = true; return; }
   if (event.target.id === 'has-addon') { $('addon-fields').hidden = !event.target.checked; markProductDirty(); }
   if (tab === 'products' && event.target.name === 'category') {
-    $('product-art-preview').innerHTML = productArtMarkup(event.target.value);
+    // Product photography is independent of category artwork.
   }
   if (event.target.name === 'source') updateArtPreview();
+  if (event.target.id === 'editorial-photo-file') {
+    const file=event.target.files?.[0]; if (!file) return;
+    if (file.size > 10 * 1024 * 1024) { notice('La imagen supera 10 MB.',true); return; }
+    uploading=true; event.target.disabled=true; markProductDirty();
+    try {
+      const result=await api('/api/admin/upload',{method:'POST',body:await file.arrayBuffer(),headers:{'content-type':file.type}});
+      pendingEditorialPhoto=result.art;
+      $('editorial-focus-x').value='50'; $('editorial-focus-y').value='50';
+      updateEditorialPhotoPreview(); markProductDirty();
+      notice('Fotografía preparada. Guarda la categoría para publicarla en la carta V2.');
+    } catch(error) { notice(error.message,true); }
+    finally { uploading=false; event.target.disabled=false; markProductDirty(); }
+    return;
+  }
+  if(event.target.id === 'product-photo-file'){
+    const file=event.target.files?.[0];if(!file)return;
+    if(file.size>10*1024*1024){notice('La imagen supera 10 MB.',true);return;}
+    uploading=true;event.target.disabled=true;markProductDirty();
+    try{const result=await api('/api/admin/product-image',{method:'POST',body:await file.arrayBuffer(),headers:{'content-type':file.type}});pendingPhoto=result.art;$('product-focus-x').value='50';$('product-focus-y').value='50';updateProductPhotoPreview();markProductDirty();notice('Fotografía preparada. Guarda el producto para publicarla.');}catch(error){notice(error.message,true);}finally{uploading=false;event.target.disabled=false;markProductDirty();}return;
+  }
   if (event.target.id !== 'art-file') return;
   const file = event.target.files?.[0]; if (!file) return;
   if (file.size > 10 * 1024 * 1024) { notice('La imagen supera 10 MB.', true); return; }
-  event.target.disabled = true; notice('Preparando imagen para escritorio y móvil…');
+  uploading=true;event.target.disabled = true;markProductDirty();notice('Preparando imagen para escritorio y móvil…');
   try {
     const result = await api('/api/admin/upload', { method:'POST', body:await file.arrayBuffer(), headers:{ 'content-type':file.type } });
     pendingArt = result.art; markProductDirty(); $('focus-x').value = '50'; $('focus-y').value = '50'; updateArtPreview();
     notice(`Imagen preparada. Pulsa «${draft?.type === 'category' ? 'Crear categoría' : 'Guardar cambios'}» para usarla en la carta.`);
   } catch (error) { notice(error.message, true); }
-  finally { if (event.target.isConnected) event.target.disabled = false; }
+  finally { uploading=false;if (event.target.isConnected) event.target.disabled = false;markProductDirty(); }
 });
 $('editor-panel').addEventListener('click', async event => {
   const target = event.target;
+  if(target.id==='remove-product-photo'){pendingPhoto=false;updateProductPhotoPreview();markProductDirty();return;}
+  if(target.id==='remove-editorial-photo'){pendingEditorialPhoto=false;updateEditorialPhotoPreview();markProductDirty();return;}
+  if (target.closest('[data-discard]')) { pendingArt=undefined;pendingPhoto=undefined;pendingEditorialPhoto=undefined;productFeedback='Cambios descartados.';categoryFeedback=productFeedback;renderEditor();return; }
   if (target.closest('[data-back-to-list]')) {
-    if (!guard()) return;
-    draft = null; pendingArt = undefined; dirty = false; productFeedback = ''; categoryFeedback = ''; renderEditor(); setWorkspaceView('list', true); return;
+    if (!await guard()) return;
+    draft = null; pendingArt = undefined; pendingPhoto = undefined; pendingEditorialPhoto = undefined; dirty = false; productFeedback = ''; categoryFeedback = ''; renderEditor(); setWorkspaceView('list', true); return;
   }
   if (target.id === 'add-option') { const list = $('options-list'); list.insertAdjacentHTML('beforeend', optionMarkup(null,list.children.length)); markProductDirty(); }
   if (target.closest('[data-remove-option]')) { target.closest('[data-option]').remove(); markProductDirty(); }
   if (target.closest('[data-cancel]')) {
-    if (!guard()) return;
-    draft = null; pendingArt = undefined; dirty = false; productFeedback = ''; categoryFeedback = ''; renderEditor();
+    if (!await guard()) return;
+    draft = null; pendingArt = undefined; pendingPhoto = undefined; pendingEditorialPhoto = undefined; dirty = false; productFeedback = ''; categoryFeedback = ''; renderEditor();
     setWorkspaceView('list', true);
   }
   const deleteButton = target.closest('[data-delete]');
   if (deleteButton) {
-    if (dirty && !guard()) return;
+    if (dirty && !await guard()) return;
     deleteButton.disabled = true;
     try { const removed = await removeSelected(); if (removed) setWorkspaceView('list', true); } catch (error) { notice(error.message,true); }
     finally { if (deleteButton.isConnected) deleteButton.disabled = false; }
   }
   if (target.id === 'remove-art') { pendingArt = false; markProductDirty(); $('focus-x').value = '50'; $('focus-y').value = '50'; updateArtPreview(); }
   const move = target.closest('[data-move]');
-  if (move) { if (dirty && !guard()) return; try { await moveCategory(Number(move.dataset.move)); } catch (error) { notice(error.message,true); } }
+  if (move) { if (dirty && !await guard()) return; try { await moveCategory(Number(move.dataset.move)); } catch (error) { notice(error.message,true); } }
 });
-window.addEventListener('beforeunload', event => { if (dirty) { event.preventDefault(); event.returnValue = ''; } });
+window.addEventListener('beforeunload', event => { if (dirty || uploading) { event.preventDefault(); event.returnValue = ''; } });
+
+function renderTools() {
+  $('editor-panel').replaceChildren();
+  const isPrint=tab==='print', title=isPrint?'Menú impreso':'Avisos de la carta';
+  $('page-title').textContent=title;$('breadcrumb-current').textContent=title;
+  $('page-description').textContent=isPrint?'Una edición de revista, preparada con el catálogo guardado.':'Comunica novedades en español e inglés.';
+  $('new-button').hidden=true;
+  document.querySelectorAll('[data-tab]').forEach(button=>{button.classList.toggle('is-active',button.dataset.tab===tab);button.setAttribute('aria-pressed',String(button.dataset.tab===tab));});
+  if(!isPrint){
+    const a=catalog.settings?.announcement || {enabled:false,moving:false,es:'',en:''};
+    $('tools-panel').innerHTML=`<form id="edit-form" data-kind="content"><h2>Aviso para visitantes</h2><p class="tool-intro">Aparece sobre la carta. Los textos se conservan cuando desactivas el aviso.</p><div class="field-grid">${field('Texto en español','es',a.es,{full:true,type:'textarea',max:300})}${field('Text in English','en',a.en,{full:true,type:'textarea',max:300})}<label class="toggle-field field--full"><input type="checkbox" name="enabled" ${a.enabled?'checked':''}> Mostrar aviso</label><label class="toggle-field field--full"><input type="checkbox" name="moving" ${a.moving?'checked':''}> Desplazamiento suave, con control para pausar</label></div><section class="qr-settings"><h3>Enlace público y QR</h3><p class="helper">Guarda la dirección HTTPS de la carta publicada. El QR estará disponible para descargar y aparecerá en las próximas ediciones impresas. Una dirección local no sirve para el público.</p>${field('URL pública de la carta','publicUrl',catalog.settings?.publicUrl || '',{type:'url',full:true,max:2048,placeholder:'https://…'})}${catalog.settings?.publicUrl && document.body.dataset.staticDemo!=='true'?`<a class="btn mt-3" href="/api/admin/menu-qr.svg">Descargar QR en SVG</a><p class="helper">Destino guardado: ${escapeHtml(catalog.settings.publicUrl)}</p>`:''}</section><div class="form-actions"><span class="product-edit-state" role="status">${escapeHtml(categoryFeedback)}</span><button class="primary-button" type="submit">Guardar contenido</button></div></form>`;
+    prepareForm();return;
+  }
+  $('tools-panel').innerHTML=`<section class="print-workspace"><h2>Ediciones para el local</h2><p class="tool-intro">A4 vertical, con composición propia para imprimir. Toma nombres, descripciones, categorías, variantes y precios del mismo catálogo. Los productos ocultos se excluyen; la disponibilidad de hoy no cambia la edición física.</p><div class="print-controls"><label class="field"><span>Idioma de la edición</span><select id="print-language"><option value="es" ${printLanguage==='es'?'selected':''}>Español</option><option value="en" ${printLanguage==='en'?'selected':''}>English</option></select></label><a class="btn" href="/api/admin/print/preview?lang=${printLanguage}" target="_blank" rel="noopener">Vista previa ↗</a><button id="generate-print" type="button" class="primary-button" disabled>Generar PDF actualizado</button><button id="refresh-print" type="button" class="text-button">Actualizar estado</button></div><p id="print-feedback" role="status" aria-live="polite">Consultando las ediciones…</p><div id="print-status" class="print-status"></div><h3 class="mt-4">Historial de ediciones</h3><ul id="edition-list" class="edition-list"></ul></section>`;
+  tablerComponents();refreshPrint();
+}
+async function refreshPrint() {
+  if(document.body.dataset.staticDemo==='true'){
+    $('print-feedback').textContent='La demo estática permite probar la edición de carta. La generación y el archivo de PDFs requieren el servidor local de Isabella’s.';
+    document.querySelector('.print-controls a').remove();
+    $('refresh-print').hidden=true;
+    return;
+  }
+  try{
+    const data=await api('/api/admin/print?lang='+printLanguage);if(tab!=='print')return;
+    printVersion=data.version;
+    $('print-feedback').textContent='';
+    $('print-status').textContent=data.current?'El PDF de este idioma está actualizado.':`Pendiente de generar · ${data.changes.added} incorporaciones, ${data.changes.changed} modificaciones y ${data.changes.removed} retiradas desde la última edición.`;
+    $('generate-print').disabled=data.current;
+    $('edition-list').innerHTML=data.editions.length?data.editions.map(e=>`<li><div><strong>${e.language==='es'?'Español':'English'} · revisión ${e.version}</strong><small>${escapeHtml(new Date(e.createdAt).toLocaleString('es-CR'))} · ${escapeHtml(e.author)}</small><small>${e.current?'Contenido vigente':'Edición anterior · conservada'}</small></div><a class="btn" href="/api/admin/print/${encodeURIComponent(e.id)}.pdf">Descargar PDF</a></li>`).join(''):'<li>Aún no se ha generado ninguna edición.</li>';
+  }catch(error){if($('print-feedback'))$('print-feedback').textContent=error.message;}
+}
+$('tools-panel').addEventListener('change',event=>{if(event.target.id==='print-language'){printLanguage=event.target.value;renderTools();}});
+$('tools-panel').addEventListener('click',async event=>{
+  if(event.target.closest('[data-discard]')){renderTools();return;}
+  if(event.target.id==='refresh-print'){await refreshPrint();return;}
+  if(event.target.id!=='generate-print')return;
+  const button=event.target;button.disabled=true;button.textContent='Preparando PDF…';button.setAttribute('aria-busy','true');
+  $('print-feedback').textContent='Puedes seguir trabajando cuando termine la generación.';
+  try{await api('/api/admin/print',{method:'POST',body:JSON.stringify({version:printVersion,language:printLanguage})});await refreshPrint();if($('print-feedback'))$('print-feedback').textContent='PDF generado. La edición ya está disponible para descargar.';}
+  catch(error){if($('print-feedback'))$('print-feedback').textContent=error.message;button.disabled=false;}
+  finally{button.textContent='Generar PDF actualizado';button.removeAttribute('aria-busy');}
+});
 
 try {
   const session = await api('/api/admin/session'); csrf = session.csrf; role = session.role; permissions = session.permissions || [];

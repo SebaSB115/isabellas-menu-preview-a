@@ -1,6 +1,7 @@
+:root{--muted:var(--admin-muted);--line:var(--admin-border);--white:#fff;--ink:var(--tblr-body-color)}
 .people-section { margin-top:2.2rem; }
 .people-head { display:flex; align-items:center; justify-content:space-between; gap:1.5rem; }
-.people-head h2 { margin:0; font:500 1.45rem/1.2 'Playfair Display',Georgia,serif; }
+.people-head h2 { margin:0; font:600 1.35rem/1.3 var(--tblr-font-sans-serif,system-ui,sans-serif); }
 .people-head p { margin:.3rem 0 0; color:var(--muted); }
 #feedback { min-height:1.4em; margin:1rem 0; color:#276247; font-weight:600; }
 #feedback[data-error=true],#form-error { color:#a52d36; }

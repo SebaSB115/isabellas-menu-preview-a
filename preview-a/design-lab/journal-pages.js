@@ -73,7 +73,9 @@ export function createJournalPaginator({ viewer, dishMarkup, getLanguage }) {
   function paginate(category) {
     const width = contentWidth();
     const language = getLanguage();
-    const key = `${category.id}:${language}:${Math.round(width)}:${innerHeight}`;
+    const mobileReader = innerWidth <= 760;
+    const readerHeight = mobileReader ? viewer.clientHeight : 0;
+    const key = `${category.id}:${language}:${Math.round(width)}:${innerHeight}:${readerHeight}`;
     if (cache.has(key)) return cache.get(key);
 
     const items = category.items;
@@ -86,18 +88,27 @@ export function createJournalPaginator({ viewer, dishMarkup, getLanguage }) {
     const desktop = innerWidth >= 1060;
     const firstWidth = desktop ? width * .54 - 34 : width;
     const firstHeights = measure(items, firstWidth);
-    const toolbarBottom = document.querySelector('.chapter-toolbar')?.getBoundingClientRect().bottom ?? 200;
-    const firstBudget = desktop
+    const toolbarBottom = (document.querySelector('.chapter-toolbar')?.getBoundingClientRect().bottom ?? 200) + scrollY;
+    const firstBudget = mobileReader
+      ? Math.max(80, readerHeight - Math.min(180, Math.max(90, innerHeight * .22)) - (innerWidth < 370 ? 171 : 155))
+      : desktop
       ? Math.max(350, Math.min(530, innerHeight - toolbarBottom - 145))
-      : Math.max(290, Math.min(480, innerHeight - toolbarBottom - (innerWidth <= 760 ? 310 : 370)));
-    const firstEnd = take(items, firstHeights, 0, firstBudget);
+      : Math.max(290, Math.min(480, innerHeight - toolbarBottom - 370));
+    const firstEnd = mobileReader && firstHeights[0] > firstBudget ? 0 : take(items, firstHeights, 0, firstBudget);
     const pages = [{ kind:'photo', columns:[items.slice(0, firstEnd)] }];
 
     if (firstEnd < items.length) {
       const columnWidth = desktop ? (width - 68) / 2 : width;
       const heights = measure(items, columnWidth);
-      const columnBudget = Math.max(460, Math.min(710, innerHeight - toolbarBottom - 125));
-      const portions = partitionBalanced(items.slice(firstEnd), heights.slice(firstEnd), columnBudget * (desktop ? 2 : 1));
+      const columnBudget = mobileReader ? Math.max(180, readerHeight - 145) : Math.max(460, Math.min(710, innerHeight - toolbarBottom - 125));
+      const portions = mobileReader ? [] : partitionBalanced(items.slice(firstEnd), heights.slice(firstEnd), columnBudget * (desktop ? 2 : 1));
+      if (mobileReader) {
+        for (let start = firstEnd; start < items.length;) {
+          const end = take(items, heights, start, columnBudget);
+          portions.push({ items:items.slice(start,end), heights:heights.slice(start,end) });
+          start = end;
+        }
+      }
       for (const portion of portions) {
         pages.push({ kind:'type', columns:desktop ? splitBalanced(portion.items, portion.heights) : [portion.items] });
       }
