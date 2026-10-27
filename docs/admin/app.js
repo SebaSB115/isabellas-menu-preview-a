@@ -638,6 +638,9 @@ async function refreshPrint() {
     $('print-status').textContent=data.current?'El PDF de este idioma está actualizado.':`Pendiente de generar · ${data.changes.added} incorporaciones, ${data.changes.changed} modificaciones y ${data.changes.removed} retiradas desde la última edición.`;
     $('generate-print').disabled=data.current;
     $('edition-list').innerHTML=data.editions.length?data.editions.map(e=>`<li><div><strong>${e.language==='es'?'Español':'English'} · revisión ${e.version}</strong><small>${escapeHtml(new Date(e.createdAt).toLocaleString('es-CR'))} · ${escapeHtml(e.author)}</small><small>${e.current?'Contenido vigente':'Edición anterior · conservada'}</small></div><a class="btn" data-edition="${escapeHtml(e.id)}" href="/api/admin/print/${encodeURIComponent(e.id)}.pdf">Descargar PDF</a></li>`).join(''):'<li>Aún no se ha generado ninguna edición.</li>';
+    if(document.body.dataset.staticDemo==='true')document.querySelectorAll('[data-edition]').forEach(link=>{
+      const button=document.createElement('button');button.type='button';button.className=link.className;button.dataset.edition=link.dataset.edition;button.textContent=link.textContent;link.replaceWith(button);
+    });
   }catch(error){if($('print-feedback'))$('print-feedback').textContent=error.message;}
 }
 function updatePromotionPreview() {
