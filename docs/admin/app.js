@@ -624,22 +624,20 @@ function renderTools() {
     prepareForm();updatePromotionPreview();return;
   }
   $('tools-panel').innerHTML=`<section class="print-workspace"><h2>Ediciones para el local</h2><p class="tool-intro">A4 vertical, con composición propia para imprimir. Toma nombres, descripciones, categorías, variantes y precios del mismo catálogo. Los productos ocultos se excluyen; la disponibilidad de hoy no cambia la edición física.</p><div class="print-controls"><label class="field"><span>Idioma de la edición</span><select id="print-language"><option value="es" ${printLanguage==='es'?'selected':''}>Español</option><option value="en" ${printLanguage==='en'?'selected':''}>English</option></select></label><a class="btn" href="/api/admin/print/preview?lang=${printLanguage}" target="_blank" rel="noopener">Vista previa ↗</a><button id="generate-print" type="button" class="primary-button" disabled>Generar PDF actualizado</button><button id="refresh-print" type="button" class="text-button">Actualizar estado</button></div><p id="print-feedback" role="status" aria-live="polite">Consultando las ediciones…</p><div id="print-status" class="print-status"></div><h3 class="mt-4">Historial de ediciones</h3><ul id="edition-list" class="edition-list"></ul></section>`;
+  if(document.body.dataset.staticDemo==='true'){
+    const preview=document.querySelector('.print-controls a');preview.dataset.demoPreview='true';preview.href='#impreso';
+    preview.insertAdjacentHTML('afterend','<button type="button" class="btn" data-demo-print>Imprimir</button>');
+  }
   tablerComponents();refreshPrint();
 }
 async function refreshPrint() {
-  if(document.body.dataset.staticDemo==='true'){
-    $('print-feedback').textContent='La demo estática permite probar la edición de carta. La generación y el archivo de PDFs requieren el servidor local de Isabella’s.';
-    document.querySelector('.print-controls a').remove();
-    $('refresh-print').hidden=true;
-    return;
-  }
   try{
     const data=await api('/api/admin/print?lang='+printLanguage);if(tab!=='print')return;
     printVersion=data.version;
-    $('print-feedback').textContent='';
+    $('print-feedback').textContent=document.body.dataset.staticDemo==='true'?'PDF e historial guardados en este navegador. Puedes descargar el archivo para compartirlo o imprimirlo.':'';
     $('print-status').textContent=data.current?'El PDF de este idioma está actualizado.':`Pendiente de generar · ${data.changes.added} incorporaciones, ${data.changes.changed} modificaciones y ${data.changes.removed} retiradas desde la última edición.`;
     $('generate-print').disabled=data.current;
-    $('edition-list').innerHTML=data.editions.length?data.editions.map(e=>`<li><div><strong>${e.language==='es'?'Español':'English'} · revisión ${e.version}</strong><small>${escapeHtml(new Date(e.createdAt).toLocaleString('es-CR'))} · ${escapeHtml(e.author)}</small><small>${e.current?'Contenido vigente':'Edición anterior · conservada'}</small></div><a class="btn" href="/api/admin/print/${encodeURIComponent(e.id)}.pdf">Descargar PDF</a></li>`).join(''):'<li>Aún no se ha generado ninguna edición.</li>';
+    $('edition-list').innerHTML=data.editions.length?data.editions.map(e=>`<li><div><strong>${e.language==='es'?'Español':'English'} · revisión ${e.version}</strong><small>${escapeHtml(new Date(e.createdAt).toLocaleString('es-CR'))} · ${escapeHtml(e.author)}</small><small>${e.current?'Contenido vigente':'Edición anterior · conservada'}</small></div><a class="btn" data-edition="${escapeHtml(e.id)}" href="/api/admin/print/${encodeURIComponent(e.id)}.pdf">Descargar PDF</a></li>`).join(''):'<li>Aún no se ha generado ninguna edición.</li>';
   }catch(error){if($('print-feedback'))$('print-feedback').textContent=error.message;}
 }
 function updatePromotionPreview() {
@@ -652,6 +650,13 @@ function updatePromotionPreview() {
 $('tools-panel').addEventListener('input',updatePromotionPreview);
 $('tools-panel').addEventListener('change',event=>{if(event.target.id==='print-language'){printLanguage=event.target.value;renderTools();}else updatePromotionPreview();});
 $('tools-panel').addEventListener('click',async event=>{
+  if(document.body.dataset.staticDemo==='true'){
+    const action=event.target.closest('[data-demo-preview],[data-demo-print],[data-edition]');
+    if(action){event.preventDefault();const popup=action.dataset.edition?null:window.open('','_blank');
+      try{const {demoPrint}=await import('./demo-store.js');if(action.dataset.edition)await demoPrint.download(action.dataset.edition);else await demoPrint.preview(printLanguage,popup,action.hasAttribute('data-demo-print'));}
+      catch(error){popup?.close();if($('print-feedback'))$('print-feedback').textContent=error.message;}return;
+    }
+  }
   if(event.target.closest('[data-discard]')){renderTools();return;}
   if(event.target.id==='refresh-print'){await refreshPrint();return;}
   if(event.target.id!=='generate-print')return;

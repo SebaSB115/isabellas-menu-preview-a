@@ -1,4 +1,7 @@
 import { categories as seed } from '../menu-data.js';
+import { createPrintService } from '../shared-print/engine.js';
+
+export const demoPrint = createPrintService({brand:'isabella', readCatalog, logo:new URL('../central/assets/isabella-logo-transparent.png', import.meta.url).href});
 
 const storageKey = 'isabella-preview-a-admin-demo-v1';
 const languages = ['en', 'de', 'ar', 'he'];
@@ -65,6 +68,14 @@ export async function api(path, options = {}) {
   }
   if(path==='/api/admin/session'){if(sessionStorage.getItem(key)!=='1')throw new Error('Inicia la demostración.');return session;}
   if(path==='/api/admin/logout'){sessionStorage.removeItem(key);return {ok:true};}
+  if (path.startsWith('/api/admin/print')) {
+    if (sessionStorage.getItem(key) !== '1') throw new Error('Inicia la demostración.');
+    if (path === '/api/admin/print' && options.method === 'POST') {
+      const data = JSON.parse(options.body);
+      return demoPrint.generate(data.version, data.language);
+    }
+    if (!options.method || options.method === 'GET') return demoPrint.status(new URL(path, location.origin).searchParams.get('lang') || 'es');
+  }
   if(path==='/api/admin/content'&&options.method==='PUT'){
     const previous=readCatalog(),incoming=JSON.parse(options.body);
     if(previous.version!==incoming.version)throw Object.assign(new Error('La demo cambió en otra pestaña. Tus cambios se conservan.'),{status:409});

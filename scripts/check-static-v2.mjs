@@ -29,7 +29,10 @@ try{
   await page.reload();await page.waitForSelector('[data-product]');await page.click('[data-product]');
   assert.equal(await page.$eval('[name=price]',e=>e.value),'7000');assert.notEqual(original,'7000');
   await page.click('#sidebar-toggle');await page.click('[data-tab=print]');
-  assert(await page.$eval('#generate-print',e=>e.disabled));assert.equal(await page.$('.print-controls a'),null);
+  await page.waitForFunction(()=>!document.querySelector('#generate-print').disabled);
+  assert(await page.$('[data-demo-preview]'));assert(await page.$('[data-demo-print]'));
+  await page.click('#generate-print');await page.waitForSelector('[data-edition]',{timeout:60000});
+  assert(await page.$eval('#print-status',e=>e.textContent.includes('actualizado')));
   const menu=await browser.newPage();await menu.goto(base+'design-lab/journal.html?category=salads&lang=es');await menu.waitForSelector('.dish-entry');
   assert(await menu.$eval('#viewer',e=>e.textContent.includes('7,000')));
   assert.equal(await menu.$$eval('[data-language]',e=>e.length),2);
@@ -38,5 +41,5 @@ try{
   assert.deepEqual(await proposal.$$eval('#language-switch [data-language]',buttons=>buttons.map(button=>button.dataset.language)),['es','en']);
   assert.equal(await proposal.$eval('#printed-menu',link=>link.hidden),true);
   assert.deepEqual(errors,[]);
-  console.log('Demo estática: login de demostración, persistencia local, cartas paginada y continua compartidas, español e inglés en V2 y PDF deshabilitado; rutas con prefijo OK.');
+  console.log('Demo estática: login, persistencia, cartas compartidas ES/EN, generación PDF e historial funcionales; rutas con prefijo OK.');
 }finally{await browser?.close();await new Promise(r=>server.close(r));}

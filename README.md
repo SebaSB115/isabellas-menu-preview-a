@@ -16,6 +16,8 @@ Prototipo independiente de la web oficial. El archivo editorial conserva las nue
 
 **[Abrir la demostración pública de la central](https://sebasb115.github.io/isabellas-menu-preview-a/admin/)**
 
+**Impresión de la demo (27 de octubre):** Menú impreso permite vista previa, impresión, generación y descarga de PDF A4 en español e inglés. El historial se guarda en este navegador y detecta cambios del catálogo; no necesita el servidor de la laptop. Fuente compartida y límites en [shared-print](preview-a/shared-print/README.md). Ejecuta `node scripts/sync-browser-print.mjs --boccantina` para distribuir el motor a Boccantina y `node scripts/check-browser-print.mjs --both` para comprobar los flujos estáticos de ambos restaurantes.
+
 **[Elegir restaurante en la central compartida](https://sebasb115.github.io/isabellas-menu-preview-a/central/)**: entrada de demostración de la versión 2 para Isabella's y Boccantina. Cada restaurante conserva sus propias vistas y datos. Boccantina permite probar productos, categorías y disponibilidad; la demo pública no incluye autenticación privada real ni Firebase.
 
 La central publicada en GitHub Pages empieza en un **login de demostración** (`demo-isabella` / `vista2026`). Es una pantalla de acceso visual, no autenticación real ni control de permisos del servidor: los archivos estáticos siguen siendo públicos. Permite probar la edición y ver el resultado en Journal dentro del mismo navegador; esos cambios no llegan a otros visitantes ni a `isabellascr.com`. La contraseña y el servidor privado local no se publican. El editor y la carta estáticos se generan con `npm.cmd run build:pages-admin` y `npm.cmd run build:pages-journal`.

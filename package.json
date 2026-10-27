@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "@tabler/core": "1.7.1",
+    "pdfmake": "0.3.11",
     "puppeteer-core": "25.16.0",
     "qrcode": "1.5.4",
     "sharp": "^0.35.5"
