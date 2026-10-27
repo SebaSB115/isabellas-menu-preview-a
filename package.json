@@ -15,6 +15,7 @@
     "check:admin": "node scripts/check-admin.mjs",
     "check:v2": "node scripts/check-v2-experience.mjs",
     "check:static": "node scripts/check-static-v2.mjs",
+    "check:promotions": "node scripts/check-promotions.mjs",
     "sync:tabler": "node scripts/sync-tabler.mjs",
     "build:entry-logos": "node scripts/build-entry-logos.mjs",
     "sync:admin-ui": "node scripts/sync-admin-entry.mjs",

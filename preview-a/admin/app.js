@@ -11,7 +11,7 @@ let csrf = '';
 let permissions = [];
 let role = 'staff';
 let catalog = null;
-let tab = ({'#categorias':'categories','#avisos':'content','#impreso':'print'})[location.hash] || 'products';
+let tab = ({'#categorias':'categories','#avisos':'content','#promociones':'content','#impreso':'print'})[location.hash] || 'products';
 let selectedCategory = null;
 let selectedProduct = null;
 let draft = null;
@@ -270,8 +270,8 @@ async function performSave(form) {
     else if(tab==='categories')await saveCategory(form);
     else {
       const a={enabled:form.elements.enabled.checked,moving:form.elements.moving.checked,es:form.elements.es.value.trim(),en:form.elements.en.value.trim()};
-      if(a.enabled&&(!a.es||!a.en)){showProductError(form.elements[!a.es?'es':'en'],'Completa el aviso en ambos idiomas antes de mostrarlo.');return false;}
-      catalog=await api('/api/admin/content',{method:'PUT',body:JSON.stringify({version:catalog.version,settings:{announcement:a,publicUrl:form.elements.publicUrl.value.trim()}})});dirty=false;categoryFeedback='Aviso guardado.';renderTools();
+      if(a.enabled&&(!a.es||!a.en)){showProductError(form.elements[!a.es?'es':'en'],'Completa la promoción en español e inglés antes de mostrarla.');return false;}
+      catalog=await api('/api/admin/content',{method:'PUT',body:JSON.stringify({version:catalog.version,settings:{announcement:a,publicUrl:form.elements.publicUrl.value.trim()}})});dirty=false;categoryFeedback=a.enabled?'Promoción guardada y visible en la carta.':'Promoción guardada y oculta en la carta.';renderTools();
     }
     return !dirty;
   } catch(error) { notice(error.message + (error.status===409?' Tus cambios permanecen en el formulario. Copia lo editado antes de recargar.':''),true);return false; }
@@ -607,15 +607,26 @@ window.addEventListener('beforeunload', event => { if (dirty || uploading) { eve
 
 function renderTools() {
   $('editor-panel').replaceChildren();
-  const isPrint=tab==='print', title=isPrint?'Menú impreso':'Avisos de la carta';
+  const isPrint=tab==='print', title=isPrint?'Menú impreso':'Promociones';
   $('page-title').textContent=title;$('breadcrumb-current').textContent=title;
-  $('page-description').textContent=isPrint?'Una edición de revista, preparada con el catálogo guardado.':'Comunica novedades en español e inglés.';
+  $('page-description').textContent=isPrint?'Una edición de revista, preparada con el catálogo guardado.':'Edita la promoción que aparece al inicio de la carta.';
   $('new-button').hidden=true;
   document.querySelectorAll('[data-tab]').forEach(button=>{button.classList.toggle('is-active',button.dataset.tab===tab);button.setAttribute('aria-pressed',String(button.dataset.tab===tab));});
   if(!isPrint){
     const a=catalog.settings?.announcement || {enabled:false,moving:false,es:'',en:''};
-    $('tools-panel').innerHTML=`<form id="edit-form" data-kind="content"><h2>Aviso para visitantes</h2><p class="tool-intro">Aparece sobre la carta. Los textos se conservan cuando desactivas el aviso.</p><div class="field-grid">${field('Texto en español','es',a.es,{full:true,type:'textarea',max:300})}${field('Text in English','en',a.en,{full:true,type:'textarea',max:300})}<label class="toggle-field field--full"><input type="checkbox" name="enabled" ${a.enabled?'checked':''}> Mostrar aviso</label><label class="toggle-field field--full"><input type="checkbox" name="moving" ${a.moving?'checked':''}> Desplazamiento suave, con control para pausar</label></div><section class="qr-settings"><h3>Enlace público y QR</h3><p class="helper">Guarda la dirección HTTPS de la carta publicada. El QR estará disponible para descargar y aparecerá en las próximas ediciones impresas. Una dirección local no sirve para el público.</p>${field('URL pública de la carta','publicUrl',catalog.settings?.publicUrl || '',{type:'url',full:true,max:2048,placeholder:'https://…'})}${catalog.settings?.publicUrl && document.body.dataset.staticDemo!=='true'?`<a class="btn mt-3" href="/api/admin/menu-qr.svg">Descargar QR en SVG</a><p class="helper">Destino guardado: ${escapeHtml(catalog.settings.publicUrl)}</p>`:''}</section><div class="form-actions"><span class="product-edit-state" role="status">${escapeHtml(categoryFeedback)}</span><button class="primary-button" type="submit">Guardar contenido</button></div></form>`;
-    prepareForm();return;
+    $('tools-panel').innerHTML=`<form id="edit-form" data-kind="content">
+      <div class="promotion-editor">
+        <section aria-labelledby="promotion-editor-title"><h2 id="promotion-editor-title">Promoción de la carta</h2><p class="tool-intro">Escribe la oferta y sus condiciones. Puedes ocultarla sin borrar el texto.</p>
+          <label class="toggle-field"><input type="checkbox" name="enabled" ${a.enabled?'checked':''}> Mostrar promoción en la carta</label>
+          <div class="field-grid">${field('Texto en español','es',a.es,{full:true,type:'textarea',max:300})}${field('Texto en inglés','en',a.en,{full:true,type:'textarea',max:300})}</div>
+          <p class="helper">Máximo 300 caracteres por idioma. El visitante verá el texto del idioma elegido.</p>
+          <details class="promotion-options"><summary>Opciones de presentación</summary><label class="toggle-field"><input type="checkbox" name="moving" ${a.moving?'checked':''}> Desplazamiento suave, con control para pausar</label></details>
+        </section>
+        <section class="promotion-preview" aria-labelledby="promotion-preview-title"><h3 id="promotion-preview-title">Vista previa</h3><label class="field"><span>Idioma de la vista previa</span><select id="promotion-preview-language" data-preview-only><option value="es">Español</option><option value="en">English</option></select></label><div class="promotion-preview__banner"><strong id="promotion-preview-label">Promociones</strong><p id="promotion-preview-text"></p></div><p id="promotion-preview-state" class="helper"></p><a class="btn" href="../design-lab/journal-fluido.html" target="_blank" rel="noopener">Ver carta ↗</a></section>
+      </div>
+      <section class="qr-settings"><h3>Enlace público y QR</h3><p class="helper">Guarda la dirección HTTPS de la carta publicada. El QR estará disponible para descargar y aparecerá en las próximas ediciones impresas. Una dirección local no sirve para el público.</p>${field('URL pública de la carta','publicUrl',catalog.settings?.publicUrl || '',{type:'url',full:true,max:2048,placeholder:'https://…'})}${catalog.settings?.publicUrl && document.body.dataset.staticDemo!=='true'?`<a class="btn mt-3" href="/api/admin/menu-qr.svg">Descargar QR en SVG</a><p class="helper">Destino guardado: ${escapeHtml(catalog.settings.publicUrl)}</p>`:''}</section>
+      <div class="form-actions"><span class="product-edit-state" role="status">${escapeHtml(categoryFeedback)}</span><button class="primary-button" type="submit">Guardar promoción</button></div></form>`;
+    prepareForm();updatePromotionPreview();return;
   }
   $('tools-panel').innerHTML=`<section class="print-workspace"><h2>Ediciones para el local</h2><p class="tool-intro">A4 vertical, con composición propia para imprimir. Toma nombres, descripciones, categorías, variantes y precios del mismo catálogo. Los productos ocultos se excluyen; la disponibilidad de hoy no cambia la edición física.</p><div class="print-controls"><label class="field"><span>Idioma de la edición</span><select id="print-language"><option value="es" ${printLanguage==='es'?'selected':''}>Español</option><option value="en" ${printLanguage==='en'?'selected':''}>English</option></select></label><a class="btn" href="/api/admin/print/preview?lang=${printLanguage}" target="_blank" rel="noopener">Vista previa ↗</a><button id="generate-print" type="button" class="primary-button" disabled>Generar PDF actualizado</button><button id="refresh-print" type="button" class="text-button">Actualizar estado</button></div><p id="print-feedback" role="status" aria-live="polite">Consultando las ediciones…</p><div id="print-status" class="print-status"></div><h3 class="mt-4">Historial de ediciones</h3><ul id="edition-list" class="edition-list"></ul></section>`;
   tablerComponents();refreshPrint();
@@ -636,7 +647,15 @@ async function refreshPrint() {
     $('edition-list').innerHTML=data.editions.length?data.editions.map(e=>`<li><div><strong>${e.language==='es'?'Español':'English'} · revisión ${e.version}</strong><small>${escapeHtml(new Date(e.createdAt).toLocaleString('es-CR'))} · ${escapeHtml(e.author)}</small><small>${e.current?'Contenido vigente':'Edición anterior · conservada'}</small></div><a class="btn" href="/api/admin/print/${encodeURIComponent(e.id)}.pdf">Descargar PDF</a></li>`).join(''):'<li>Aún no se ha generado ninguna edición.</li>';
   }catch(error){if($('print-feedback'))$('print-feedback').textContent=error.message;}
 }
-$('tools-panel').addEventListener('change',event=>{if(event.target.id==='print-language'){printLanguage=event.target.value;renderTools();}});
+function updatePromotionPreview() {
+  const form=$('edit-form');if(form?.dataset.kind!=='content')return;
+  const lang=$('promotion-preview-language').value;
+  $('promotion-preview-label').textContent=lang==='en'?'Special offers':'Promociones';
+  $('promotion-preview-text').textContent=form.elements[lang].value.trim() || (lang==='en'?'Your offer will appear here.':'Aquí aparecerá el texto de tu promoción.');
+  $('promotion-preview-state').textContent=form.elements.enabled.checked?'Se mostrará en la carta al guardar.':'Oculta en la carta. Activa «Mostrar promoción» y guarda para publicarla.';
+}
+$('tools-panel').addEventListener('input',updatePromotionPreview);
+$('tools-panel').addEventListener('change',event=>{if(event.target.id==='print-language'){printLanguage=event.target.value;renderTools();}else updatePromotionPreview();});
 $('tools-panel').addEventListener('click',async event=>{
   if(event.target.closest('[data-discard]')){renderTools();return;}
   if(event.target.id==='refresh-print'){await refreshPrint();return;}

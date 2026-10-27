@@ -110,7 +110,6 @@ function render() {
   $('index-close').setAttribute('aria-label',t.close);
   $('category-rail').setAttribute('aria-label',t.categories);
   $('intro-title').textContent=t.menu;
-  $('intro-copy').textContent=t.intro;
   $('service-note').textContent=t.service;
   $('fallback-note').textContent=t.fallback;
   $('fallback-note').hidden=!hasFallback(categories);
@@ -129,8 +128,11 @@ function render() {
   $('printed-menu').href=`../api/menu.pdf?lang=${language}`;
   $('printed-menu').textContent=t.download;
   const notice=catalog.settings?.announcement;
-  $('announcement').hidden=!notice?.enabled;
-  $('announcement-text').textContent=notice?.[language]||notice?.es||'';
+  const promotionText=(notice?.[language]||notice?.es||'').trim();
+  $('announcement').hidden=!notice?.enabled||!promotionText;
+  $('announcement-text').textContent=promotionText;
+  $('announcement-label').textContent=language==='en'?'Special offers':'Promociones';
+  $('announcement').setAttribute('aria-label',$('announcement-label').textContent);
   $('announcement-pause').hidden=!notice?.moving;
   $('announcement-pause').textContent=$('announcement-pause').getAttribute('aria-pressed')==='true'?t.play:t.pause;
   $('announcement').classList.toggle('announcement--moving',Boolean(notice?.moving));

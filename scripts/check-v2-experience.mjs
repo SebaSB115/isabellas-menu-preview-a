@@ -90,7 +90,7 @@ try{
   await fill('[name=publicUrl]','http://127.0.0.1:4193/');
   await page.click('#edit-form [type=submit]');await page.waitForSelector('#notice.is-error');assert.equal(await page.$eval('[name=publicUrl]',el=>el.value),'http://127.0.0.1:4193/');
   await fill('[name=publicUrl]','https://example.org/isabella-qa');
-  await page.click('[name=enabled]');await page.click('[name=moving]');await save();pass('Aviso ES/EN guardado');
+  await page.click('[name=enabled]');await page.click('.promotion-options summary');await page.click('[name=moving]');await save();pass('Aviso ES/EN guardado');
   const qr=await page.evaluate(async()=>{const r=await fetch('/api/admin/menu-qr.svg');return {status:r.status,body:await r.text()};});assert.equal(qr.status,200);assert(qr.body.includes('<svg'));pass('QR descargable y bloqueo de direcciones locales para impresión');
   const menu=await browser.newPage();menu.on('pageerror',e=>errors.push(e.message));
   await menu.evaluateOnNewDocument(()=>Object.defineProperty(navigator,'language',{get:()=> 'de-DE'}));

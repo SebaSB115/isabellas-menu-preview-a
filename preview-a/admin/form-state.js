@@ -1,7 +1,7 @@
 // Compare normalized form values, not keystrokes. Reverting a value clears dirty state.
 export function formSnapshot(form, images = {}) {
   if (!form) return '';
-  const controls = [...form.querySelectorAll('input,textarea,select')].filter(el => el.type !== 'file');
+  const controls = [...form.querySelectorAll('input,textarea,select')].filter(el => el.type !== 'file' && !el.hasAttribute('data-preview-only'));
   return JSON.stringify({ fields:controls.map(el => [
     el.name || el.id,
     el.type === 'checkbox' ? el.checked : el.type === 'number' && el.value !== '' ? Number(el.value) : el.value.trim()
