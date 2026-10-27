@@ -4,9 +4,9 @@
 
 **[Estado de la entrega del 23 de octubre de 2026](ESTADO_2026-10-23.md)**: alcance, comprobaciones y límites del preview.
 
-**Diseño predeterminado:** Isabella’s Journal en el preview local y en la demo pública de GitHub Pages. La carta editorial anterior sigue accesible como `borrador-1.html` (Borrador 1). La Central privada local y Journal comparten el catálogo de `/api/menu`; la demo pública comparte sus cambios solo entre el editor y Journal del mismo navegador mediante almacenamiento local.
+**Carta única vigente (27/10/2026):** Journal continuo, con índice lateral en escritorio y categorías desplegables en móvil, en `design-lab/journal-fluido.html`. La raíz local y pública abre esta carta. Las antiguas rutas Journal paginado, Il Libro y Borrador 1 solo redirigen a ella; sus lectores se retiraron de V2. La Central local comparte `/api/menu`; la demo pública comparte los cambios entre administración y carta únicamente en el mismo navegador. Validación: `node scripts/check-current-menu.mjs`; añadir `--url https://sebasb115.github.io/isabellas-menu-preview-a/` para comprobar el hosting.
 
-Prototipo independiente de la web oficial. El archivo editorial conserva las nueve páginas del menú 2026 y los cinco idiomas históricos, incluido RTL para árabe y hebreo. Journal V2 utiliza únicamente español e inglés, detecta el idioma del navegador y permite cambiarlo manualmente. Los borradores anteriores permanecen disponibles como referencia.
+Demostración independiente de la web oficial. Los datos conservan las nueve páginas originales y las traducciones históricas. La carta vigente utiliza únicamente ES/EN, detecta el idioma del navegador y permite cambiarlo manualmente. Los diseños anteriores se conservan en el historial de Git, sin opción para abrirlos en la carta.
 
 **Iteración visual (20/10/2026):** portada de libro, índice de capítulos en escritorio y tipografía Fraunces de código abierto. El lector ajusta la ilustración y los platos para mostrar hoja y controles en una pantalla; al cambiar de página no desplaza el documento. La [dirección visual de ambas cartas](notes/direccion-visual-dos-cartas-2026-10-20.md) explica el criterio de marca y UX.
 

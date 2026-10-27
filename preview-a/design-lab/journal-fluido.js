@@ -1,10 +1,10 @@
 import { categories as seed } from '../menu-data.js';
-import { preferredLanguage } from './journal-experience.js';
+import { preferredLanguage } from './journal-language.js';
 
 const $ = id => document.getElementById(id);
 const chromeWords={
-  es:{preview:'Propuesta local · La carta actual sigue disponible',unavailable:'Catálogo actualizado no disponible; se muestra la referencia guardada',home:'Isabella’s · Ir al inicio',notice:'Aviso del restaurante',allCategories:'Todas las categorías',index:'Índice de la carta',footer:'Isabella’s · Menú 2026'},
-  en:{preview:'Local proposal · The current menu remains available',unavailable:'Updated menu unavailable; showing the saved reference',home:'Isabella’s · Back to start',notice:'Restaurant announcement',allCategories:'All categories',index:'Menu index',footer:'Isabella’s · Menu 2026'},
+  es:{preview:'Vista previa local · Carta de consulta',unavailable:'Catálogo actualizado no disponible; se muestra la referencia guardada',home:'Isabella’s · Ir al inicio',notice:'Aviso del restaurante',allCategories:'Todas las categorías',index:'Índice de la carta',footer:'Isabella’s · Menú 2026'},
+  en:{preview:'Local preview · Informational menu',unavailable:'Updated menu unavailable; showing the saved reference',home:'Isabella’s · Back to start',notice:'Restaurant announcement',allCategories:'All categories',index:'Menu index',footer:'Isabella’s · Menu 2026'},
 };
 const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[char]);
 const words = {
@@ -112,16 +112,11 @@ function render() {
   $('service-note').textContent=t.service;
   $('fallback-note').textContent=t.fallback;
   $('fallback-note').hidden=!hasFallback(categories);
-  $('current-menu').textContent=t.current;
-  $('index-current-menu').textContent=t.current;
   $('photo-credits').textContent=t.credits;
   $('sidebar-links').innerHTML=navMarkup(categories,'sidebar');
   $('index-links').innerHTML=navMarkup(categories,'index');
   $('chapters').innerHTML=categories.map(chapter).join('');
   activeId='';
-  const current=new URL('./journal.html',location.href);current.searchParams.set('lang',language);
-  $('current-menu').href=current;
-  $('index-current-menu').href=current;
   const printed=Array.isArray(catalog.printed)&&catalog.printed.includes(language);
   $('printed-menu').hidden=!printed;
   $('printed-menu').href=`../api/menu.pdf?lang=${language}`;

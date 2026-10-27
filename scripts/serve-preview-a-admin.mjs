@@ -263,7 +263,7 @@ async function handle(request, response) {
     }
     if (request.method !== 'GET' && request.method !== 'HEAD') return json(response, 405, { error:'Método no permitido.' });
     if (path === '/' || path === '/index.html') {
-      response.writeHead(302, headers({ location:`/design-lab/journal.html${url.search}`, 'cache-control':'no-store' }));
+      response.writeHead(302, headers({ location:`/design-lab/journal-fluido.html${url.search}`, 'cache-control':'no-store' }));
       response.end(); return;
     }
     if (path === '/central/usuarios/' || path === '/central/usuarios/index.html') {

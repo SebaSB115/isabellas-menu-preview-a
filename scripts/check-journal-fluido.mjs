@@ -28,7 +28,7 @@ try{
   await languagePage.goto(base+'/design-lab/journal-fluido.html?lang=es',{waitUntil:'networkidle0'});
   await languagePage.evaluate(()=>localStorage.removeItem('isabella.journal.language'));
   await languagePage.goto(base+'/design-lab/journal-fluido.html',{waitUntil:'networkidle0'});
-  check('Non-Spanish browser opens in English',await languagePage.evaluate(()=>document.documentElement.lang==='en'&&document.querySelectorAll('#language-switch button').length===2&&document.querySelector('#preview-note').textContent.startsWith('Local proposal')));
+  check('Non-Spanish browser opens in English',await languagePage.evaluate(()=>document.documentElement.lang==='en'&&document.querySelectorAll('#language-switch button').length===2&&document.querySelector('#preview-note').textContent.startsWith('Local preview')));
   await languagePage.evaluate(()=>localStorage.setItem('isabella.journal.language','ar'));
   await languagePage.goto(base+'/design-lab/journal-fluido.html?lang=de',{waitUntil:'networkidle0'});
   check('Old unsupported language preference and URL fall back to English',await languagePage.evaluate(()=>document.documentElement.lang==='en'));

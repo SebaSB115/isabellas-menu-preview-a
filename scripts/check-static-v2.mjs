@@ -33,8 +33,8 @@ try{
   assert(await page.$('[data-demo-preview]'));assert(await page.$('[data-demo-print]'));
   await page.click('#generate-print');await page.waitForSelector('[data-edition]',{timeout:60000});
   assert(await page.$eval('#print-status',e=>e.textContent.includes('actualizado')));
-  const menu=await browser.newPage();await menu.goto(base+'design-lab/journal.html?category=salads&lang=es');await menu.waitForSelector('.dish-entry');
-  assert(await menu.$eval('#viewer',e=>e.textContent.includes('7,000')));
+  const menu=await browser.newPage();await menu.goto(base+'design-lab/journal.html?category=salads&lang=es');await menu.waitForSelector('#chapters [data-dish]');
+  assert(await menu.$eval('#chapters',e=>e.textContent.includes('7,000')));
   assert.equal(await menu.$$eval('[data-language]',e=>e.length),2);
   const proposal=await browser.newPage();await proposal.goto(base+'design-lab/journal-fluido.html?lang=es#category-salads');await proposal.waitForSelector('[data-dish]');
   assert(await proposal.$eval('#chapters',e=>e.textContent.includes('7,000')));

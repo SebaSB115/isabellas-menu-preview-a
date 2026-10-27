@@ -94,40 +94,31 @@ try{
   const qr=await page.evaluate(async()=>{const r=await fetch('/api/admin/menu-qr.svg');return {status:r.status,body:await r.text()};});assert.equal(qr.status,200);assert(qr.body.includes('<svg'));pass('QR descargable y bloqueo de direcciones locales para impresión');
   const menu=await browser.newPage();menu.on('pageerror',e=>errors.push(e.message));
   await menu.evaluateOnNewDocument(()=>Object.defineProperty(navigator,'language',{get:()=> 'de-DE'}));
-  await menu.goto(base+'/design-lab/journal.html?category=salads');await menu.waitForSelector('[data-open-dish]');
+  await menu.goto(base+'/design-lab/journal.html?category=salads');await menu.waitForSelector('[data-detail]');
   assert.equal(await menu.evaluate(()=>document.documentElement.lang),'en');
   await menu.click('[data-language=es]');assert.equal(await menu.evaluate(()=>document.documentElement.lang),'es');
-  await menu.reload();await menu.waitForSelector('[data-open-dish]');assert.equal(await menu.evaluate(()=>document.documentElement.lang),'es');
-  await menu.click('#announcement-pause');assert.equal(await menu.$eval('#announcement-pause',el=>el.getAttribute('aria-pressed')),'true');pass('Idioma automático, preferencia manual y pausa del aviso');
+  await menu.reload();await menu.waitForSelector('[data-detail]');assert.equal(await menu.evaluate(()=>document.documentElement.lang),'es');
+  await menu.evaluate(()=>scrollTo({top:0,behavior:'instant'}));await new Promise(r=>setTimeout(r,250));
+  const paused=await menu.$eval('#announcement-pause',el=>el.getAttribute('aria-pressed'));await menu.click('#announcement-pause');assert.equal(await menu.$eval('#announcement-pause',el=>el.getAttribute('aria-pressed')),paused==='true'?'false':'true');pass('Idioma automático, preferencia manual y pausa del aviso');
   for(const width of [320,390,768,1440]){
     await menu.setViewport({width,height:1000});await new Promise(r=>setTimeout(r,250));await overflow(menu,'Carta '+width);
     await menu.screenshot({path:resolve(out,'carta-'+width+'.png')});
-    await menu.$eval('[data-open-dish]',el=>el.scrollIntoView({block:'center',behavior:'instant'}));
-    await menu.click('[data-open-dish]');await menu.waitForSelector('#dish-dialog[open]',{timeout:5000});await overflow(menu,'Detalle '+width);
+    await menu.$eval('[data-detail]',el=>el.scrollIntoView({block:'center',behavior:'instant'}));
+    await menu.click('[data-detail]');await menu.waitForSelector('#dish-dialog[open]',{timeout:5000});await overflow(menu,'Detalle '+width);
     await menu.waitForFunction(()=>{const image=document.querySelector('#dish-dialog img');return image?.complete&&image.naturalWidth>0;},{timeout:5000});
     await menu.screenshot({path:resolve(out,'detalle-plato-'+width+'.png')});
     if(width===390)await a11y(menu,'Detalle móvil');
-    await menu.click('[data-close-dish]');assert.equal(await menu.evaluate(()=>document.body.classList.contains('dish-open')),false);
+    await menu.click('[data-close-detail]');assert.equal(await menu.evaluate(()=>document.body.classList.contains('dish-open')),false);
   }pass('Detalle con fotografía: pantalla completa móvil, cierre y scroll');
-  const before=menu.url();await menu.evaluate(()=>{
-    const viewer=document.querySelector('#viewer');
-    viewer.dispatchEvent(new TouchEvent('touchstart',{bubbles:true,touches:[new Touch({identifier:1,target:viewer,clientX:250,clientY:200})]}));
-    viewer.dispatchEvent(new TouchEvent('touchend',{bubbles:true,changedTouches:[new Touch({identifier:1,target:viewer,clientX:100,clientY:205})]}));
-  });assert.notEqual(menu.url(),before);pass('Gesto horizontal cambia página');
-  const expected=(await request('/api/menu')).data.categories.flatMap(c=>c.items.map(i=>i.id)).sort();
+  const expected=(await request('/api/menu')).data.categories.filter(c=>c.visible!==false).flatMap(c=>c.items.filter(i=>i.visible!==false).map(i=>i.id)).sort();
   await menu.bringToFront();
   for(const language of ['es','en'])for(const width of [320,390,768,1440]){
-    await menu.setViewport({width,height:1000});await menu.goto(base+'/design-lab/journal.html?view=cover&lang='+language);
-    await menu.waitForFunction(()=>document.querySelector('#page-position')?.textContent.includes('/'));
-    const seen=[];let turns=0;
-    do{
-      seen.push(...await menu.$$eval('#viewer [data-dish]',nodes=>nodes.map(n=>n.dataset.dish)));
-      await overflow(menu,'Todas las páginas '+language+' '+width);
-      const chapter=await menu.$eval('#viewer',el=>({id:el.querySelector('[data-chapter]')?.dataset.chapter,page:el.querySelector('[data-page]')?.dataset.page}));
-      if(chapter.id==='pasta'&&[390,1440].includes(width))await menu.screenshot({path:resolve(out,`carta-pastas-${language}-${width}-${chapter.page}.png`)});
-      if(await menu.$eval('#page-next',b=>b.disabled))break;
-      await menu.click('#page-next');turns++;
-    }while(turns<80);
+    await menu.setViewport({width,height:1000});await menu.goto(base+'/?lang='+language);
+    await menu.waitForSelector('#chapters [data-dish]');
+    assert(menu.url().includes('journal-fluido.html'));
+    assert.equal(await menu.$('#page-next'),null);
+    const seen=await menu.$$eval('#chapters [data-dish]',nodes=>nodes.map(n=>n.dataset.dish));
+    await overflow(menu,'Carta continua '+language+' '+width);
     assert.deepEqual(seen.sort(),expected,'Sin platos perdidos ni repetidos en '+language+' '+width);
   }
   pass('Carta completa ES/EN: todos los platos y variantes, sin pérdida ni duplicación en cuatro anchos');

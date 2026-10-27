@@ -1,14 +1,21 @@
-# Exploración visual aislada de la carta
+﻿# Carta unica de Isabella V2
 
-Rutas locales con `npm.cmd run serve:preview-a`:
+La implementacion vigente es journal-fluido.html, journal-fluido.js y journal-fluido.css. Mantiene la composicion aprobada: listado y fotografia de categoria, indice lateral en escritorio y selector de categorias en movil. Se lee mediante desplazamiento vertical, sin botones de paginacion. Las fotografias individuales aparecen exclusivamente en las fichas de platos.
 
-- `/design-lab/il-libro.html`: pliego de dos páginas en escritorio y lectura vertical en móvil.
-- `/design-lab/journal.html`: revista con fotografía editorial de referencia y páginas de contenido. Las categorías largas se reparten en páginas navegables; `?category=pasta&page=1` abre la segunda página de Pastas.
+La raiz /, Ver carta de administracion y las rutas antiguas abren esta misma implementacion. journal.html, il-libro.html y /borrador-1.html son redirecciones de compatibilidad; no contienen formatos alternativos. No restaurar los lectores retirados al generar el hosting.
 
-Isabella’s Journal es la carta predeterminada del preview local en `/`. La carta anterior queda disponible como `/borrador-1.html`, en espera. Il Libro conserva su ruta de exploración. Las tres vistas consultan `/api/menu`, el mismo catálogo que guarda la Central local, y usan `menu-data.js` como respaldo sin servidor. Journal vuelve a consultar los datos al recuperar el foco. Conservan las ocho categorías iniciales, cinco idiomas, precios y variantes; no incluyen pedidos ni pagos. `?category=salads` muestra una categoría breve; `?category=pasta`, una extensa. `?lang=ar` y `?lang=he` activan RTL.
+ES/EN conserva deteccion del navegador y preferencia manual mediante journal-language.js. El catalogo local procede de /api/menu. El build publico adapta esa lectura a admin/demo-store.js, que comparte datos solo dentro del mismo navegador. El menu impreso mantiene su propia composicion y generacion PDF.
 
-Las fotografías de Journal son referencias conceptuales; no se presentan como fotos verificadas de platos de Isabella’s. Sus fuentes y licencias están en [photo-credits.html](./photo-credits.html). Las ilustraciones y portada proceden de los recursos existentes de la carta.
+Las fotografias de muestra no representan imagenes oficiales verificadas. Los recursos y datos existentes se conservan. Las imagenes asignadas desde administracion tienen prioridad sobre las referencias.
 
-Journal usa la imagen de categoría que guarda la Central (`category.art.src`) cuando existe. Si más adelante se incorpora `category.editorialPhoto.src`, esa foto tendrá prioridad; de momento las categorías sin imagen editada muestran las referencias locales. La paginación mide las filas renderizadas con el idioma y ancho actuales; los platos se mantienen completos y en el orden del catálogo aunque cambien los textos, precios, variantes o la cantidad de productos.
+## Comprobaciones
 
-El cambio de diseño predeterminado se limita al servidor de preview local; la demo estática en `docs/` y la web oficial permanecen independientes. El catálogo local sigue guardado en `data/menu.json`.
+- npm run build:pages-journal
+- npm run check:preview-a
+- npm run check:admin
+- npm run check:v2
+- npm run check:static
+- node scripts/check-current-menu.mjs
+- node scripts/check-current-menu.mjs --url https://sebasb115.github.io/isabellas-menu-preview-a/
+
+La ultima prueba valida siete entradas, Ver carta desde administracion, los 55 productos iniciales, imagenes, fichas, cierre y recuperacion de lectura, ES/EN y ausencia de desbordamientos a 320, 390, 768, 1024 y 1440 px. Guarda capturas e informe en una carpeta temporal. Las pruebas en Chrome no equivalen a comprobaciones en un iPhone fisico.
