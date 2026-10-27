@@ -41,6 +41,24 @@ try{
     if(process.env.DEBUG_TOUCH)console.log(selector,dx,dy,await page.evaluate(()=>window.gestureLog?.slice(-2)));
   }
   for(const width of [320,390,768,1024,1440]){
+    await page.setViewport({width,height:width<500?844:1100,isMobile:false,hasTouch:false,deviceScaleFactor:1});
+    await reset();
+    const drag=async(selector,dx,dy=0)=>{
+      const p=await page.$eval(selector,e=>{const r=e.getBoundingClientRect();return {x:r.left+Math.min(150,r.width/2),y:r.top+r.height/2};});
+      await page.mouse.move(p.x,p.y);await page.mouse.down();await page.mouse.move(p.x+dx,p.y+dy,{steps:12});await page.mouse.up();
+      await new Promise(r=>setTimeout(r,100));
+    };
+    const mouseStart=await position();
+    if(width===390)await page.screenshot({path:resolve(output,'mouse-before-390.png')});
+    assert.equal(await page.evaluate(()=>navigator.maxTouchPoints),0,'Must test a non-touch desktop viewport');
+    await drag('[data-open-dish]',-80);assert.equal(await position(),mouseStart+1,`Mouse drag over dish failed at ${width}`);
+    if(width===390)await page.screenshot({path:resolve(output,'mouse-after-390.png')});
+    assert.equal(await page.$('#dish-dialog[open]'),null,'Mouse drag opened detail');
+    await drag('#viewer',80);assert.equal(await position(),mouseStart);
+    await drag('.journal-photo img',-80);assert.equal(await position(),mouseStart+1,'Native image drag stole page gesture');
+    await drag('#viewer',80);assert.equal(await position(),mouseStart);
+    await drag('#viewer',4,-65);assert.equal(await position(),mouseStart,'Vertical mouse movement turned page');
+    await page.click('[data-open-dish]');await page.waitForSelector('#dish-dialog[open]');await page.click('[data-close-dish]');
     await page.setViewport({width,height:width<500?844:1100,isMobile:width<1024,hasTouch:true,deviceScaleFactor:1});
     await reset();await page.screenshot({path:resolve(output,`before-${width}.png`)});
     await page.evaluate(()=>{window.trustedTouch=false;document.querySelector('#viewer').addEventListener('touchstart',e=>{window.trustedTouch=e.isTrusted;},{once:true});});
@@ -69,7 +87,7 @@ try{
     await page.screenshot({path:resolve(output,`after-${width}.png`)});
     before=await position();await gesture('#viewer',-80,0,{cancel:true});assert.equal(await position(),before);
     await gesture('#viewer',0,0,{multi:true});assert.equal(await position(),before);
-    results.push({width,swipeName:true,swipePhoto:true,reverse:true,tapDetail:true,cancel:true,multitouch:true,vertical:true,buttons:true,keyboard:true,ES_EN:true});
+    results.push({width,mouseName:true,mousePhoto:true,mouseReverse:true,mouseClickDetail:true,swipeName:true,swipePhoto:true,reverse:true,tapDetail:true,cancel:true,multitouch:true,vertical:true,buttons:true,keyboard:true,ES_EN:true});
     // Isolate device emulation and its multi-contact state between viewports.
     await page.close();page=await browser.newPage();page.on('pageerror',e=>errors.push(e.message));cdp=await page.createCDPSession();
   }

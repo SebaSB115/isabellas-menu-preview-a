@@ -1,4 +1,4 @@
-import { installPageSwipe } from './journal-swipe.js?v=711235c49040';
+import { installPageSwipe } from './journal-swipe.js?v=e74df35df269';
 const escape = value => String(value ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const $=id=>document.getElementById(id);
 export function preferredLanguage(query) {
