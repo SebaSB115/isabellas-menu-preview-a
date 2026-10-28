@@ -119,13 +119,18 @@ try{
     },brand);
     for(const key of ['conflict','blocked','availabilityIgnored','hiddenExcluded'])assert(edgeCases[key],`${brand} ${key}`);
     await writeFile(resolve(directory,'long-text.pdf'),Buffer.from(edgeCases.pdf));
-    const proposalSelector=isabella?'#print-add-choice':'[data-print-add-choice]';
     const addButton=isabella?'#print-add':'[data-print-add]';
     const sizeSelector=isabella?'#print-size':'[data-print-size]';
     const proposalSelectorActive=isabella?'#print-proposal':'[data-print-proposal]';
-    for(const [proposal,size,expectedWidth] of [['sobria','A3',1190],['editorial','A2',1683]]){
-      await page.select(proposalSelector,proposal);await page.click(addButton);
-      await page.waitForSelector(`${proposalSelectorActive} option[value=${proposal}]`);
+    const ids=[];
+    for(const [number,size,expectedWidth] of [[1,'A3',1190],[2,'A2',1683]]){
+      await page.click(addButton);
+      await page.waitForFunction((selector,previous)=>{const value=document.querySelector(selector)?.value||'';return /^p-[0-9a-f-]{36}$/.test(value)&&value!==previous;},{},proposalSelectorActive,ids.at(-1)||'actual');
+      const proposal=await page.$eval(proposalSelectorActive,el=>el.value);ids.push(proposal);
+      assert(/^p-[0-9a-f-]{36}$/.test(proposal));
+      await page.$eval('[data-print-name]',(el,value)=>{el.value=value;el.dispatchEvent(new Event('change',{bubbles:true}));},`Carta de prueba ${number}`);
+      await page.select('[data-print-design="columns"]',number===1?'1':'2');
+      await page.waitForFunction((brand,expected)=>document.querySelector(brand==='isabella'?'#print-live-preview .isabella-print':'[data-print-live-preview] .print-menu')?.style.getPropertyValue('--print-columns')===expected,{},brand,number===1?'1':'2');
       await page.select(sizeSelector,size);await page.waitForFunction(s=>!document.querySelector(s).disabled,{},generate);
       await page.click(generate);
       await page.waitForFunction(brand=>Boolean(document.querySelector(brand==='isabella'?'#print-current [data-edition]':'.print-download[data-edition]')),{timeout:90000},brand);
@@ -140,8 +145,24 @@ try{
       assert(media,`${brand} ${size} missing MediaBox`);
       const dimensions=[Number(media[1]),Number(media[2])];
       assert(dimensions.some(value=>Math.abs(value-(isabella?expectedWidth:size==='A3'?841.89:1190.55))<4),`${brand} ${size} incorrect MediaBox: ${dimensions}`);
-      await writeFile(resolve(directory,`${proposal}-${size}.pdf`),variantPdf);
+      await writeFile(resolve(directory,`propuesta-${number}-${size}.pdf`),variantPdf);
+      if(number===1){
+        await page.screenshot({path:resolve(directory,'editor-1440.png'),fullPage:true});
+        await page.setViewport({width:390,height:844});
+        assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),`${brand}: desbordamiento móvil en editor`);
+        await page.screenshot({path:resolve(directory,'editor-390.png'),fullPage:true});
+        await page.setViewport({width:1440,height:1000});
+        await page.reload();
+        await page.waitForSelector(isabella?'#app-shell:not([hidden])':'#sidebar-toggle');
+        if(!await page.$('.print-workspace'))await goPrint();
+        await page.select(proposalSelectorActive,proposal);
+        await page.waitForSelector('[data-print-name]');
+        assert.equal(await page.$eval('[data-print-name]',el=>el.value),'Carta de prueba 1',`${brand}: la propuesta no persistió tras recargar`);
+      }
     }
+    page.once('dialog',dialog=>dialog.accept());
+    await page.click('[data-print-delete]');
+    await page.waitForFunction((selector,id)=>![...document.querySelector(selector).options].some(option=>option.value===id),{},proposalSelectorActive,ids[1]);
     await page.evaluate(async brand=>{
       const db=await new Promise((resolve,reject)=>{const request=indexedDB.open(`${brand}-demo-print-v1`);request.onsuccess=()=>resolve(request.result);request.onerror=reject;});
       await new Promise((resolve,reject)=>{const transaction=db.transaction('editions','readwrite');transaction.objectStore('editions').put({id:'legacy-qa',fingerprint:'old-design',language:'es',version:1,revision:1,author:'Archivo anterior',createdAt:'2026-10-27T00:00:00.000Z',snapshot:{groups:[]}});transaction.oncomplete=resolve;transaction.onerror=reject;});db.close();
@@ -149,7 +170,7 @@ try{
     await page.click(refresh);
     await page.waitForFunction(brand=>!document.querySelector(brand==='isabella'?'#print-feedback':'#feedback')?.textContent?.includes('Consultando'),{},brand);
     assert.equal(await page.$('[data-edition="legacy-qa"]'),null,`${brand}: el PDF antiguo aparece en la interfaz`);
-    report.push({brand,download:filename,bytes:bytes.length,products:snapshot.groups.reduce((n,g)=>n+g.items.length,0),widths:[320,390,768,1440],history:true,priceChange:true,english:true,preview:true,printAction:true,proposals:['actual','sobria','editorial'],sizes:['A4','A3','A2']});
+    report.push({brand,download:filename,bytes:bytes.length,products:snapshot.groups.reduce((n,g)=>n+g.items.length,0),widths:[320,390,768,1440],history:true,priceChange:true,english:true,preview:true,printAction:true,proposals:['actual','custom-created-edited-deleted'],sizes:['A4','A3','A2']});
     await context.close();
   }
   await writeFile(resolve(output,'report.json'),JSON.stringify(report,null,2));

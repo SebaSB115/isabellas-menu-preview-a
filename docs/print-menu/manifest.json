@@ -1,6 +1,6 @@
 {
   "source": "preview-a/shared-print/engine.js",
-  "sourceSha256": "7da56a5cea76b43ddb18a6eb225bab4a6f75c19efdd3ee2c9e98750591225241",
+  "sourceSha256": "10cd2bb8d387b52ffbb2afa5cda5e19ba96e8a3f3cddc9b9085d78e1aea51f0f",
   "script": "scripts/sync-isabella-print.mjs",
-  "serviceSha256": "6d70706b8f0d6af0749bd5ee56d415f10385b7e4b78a9fdc226581e4b0dcfc5a"
+  "serviceSha256": "9985bc706c260cea3d6a3b40fa4da63ed94838f3cdb7a1bc1c8ed4e109b012a9"
 }

@@ -1,5 +1,7 @@
 import { api, resetDemo } from './demo-store.js';
 import { formSnapshot, tablerComponents } from './form-state.js';
+import {loadPrintDrafts,savePrintDrafts,createPrintDraft,printDraftFields,readPrintDraft} from '../shared-print/drafts.js';
+import {renderPrintBody,paginatePrint,fitPrintPreview,projectMenu} from '../print-menu/layout.js';
 const $ = id => document.getElementById(id);
 const languages = [['es','Español'],['en','English'],['de','Deutsch'],['ar','العربية · RTL'],['he','עברית · RTL']];
 const originalPages = [['1-PRE.webp','Ensaladas y sopas'],['2-PRE.webp','Entradas'],['7-PRE.webp','Focaccia y strombolis'],['ALL-4-D.webp','Pastas y risotto'],['4-PRE.webp','Pastas adicionales'],['ALL-4-C.webp','Carnes'],['ALL-4-A.webp','Cocteles clásicos'],['ALL-4-B.webp','Café']];
@@ -23,12 +25,35 @@ let baseline = '';
 let saving = false;
 let uploading = false;
 let printLanguage = 'es';
-const printChoices = {actual:'Diseño actual',sobria:'Sobria',editorial:'Editorial'};
-const printStorage = 'isabella-print-proposals-v2';
-let printAdded = (() => { try { return JSON.parse(localStorage.getItem(printStorage) || '[]').filter(value => ['sobria','editorial'].includes(value)); } catch { return []; } })();
+let printDrafts=loadPrintDrafts('isabella');
+const printChoices={actual:'Diseño actual'};
+const printAdded=[];
+const selectedPrintDraft=()=>printDrafts.find(item=>item.id===printProposal);
+const printDesign=()=>selectedPrintDraft()?.design||null;
+const printName=id=>id==='actual'?'Diseño actual':printDrafts.find(item=>item.id===id)?.name||'Propuesta eliminada';
+const printQuery=()=>`lang=${printLanguage}&proposal=${encodeURIComponent(printProposal)}&size=${printSize}${printDesign()?`&design=${encodeURIComponent(JSON.stringify(printDesign()))}`:''}`;
 let printProposal = 'actual';
 let printSize = 'A4';
 let printVersion = null;
+let stopPrintPreview;
+let printPreviewRequest=0;
+async function renderPrintPreview(){
+  const host=$('print-live-preview');if(!host||!catalog)return;
+  const request=++printPreviewRequest;
+  try{
+    if(!document.querySelector('[data-print-styles]')){
+      const link=document.createElement('link');link.rel='stylesheet';link.dataset.printStyles='true';link.href='../print-menu/style.css';document.head.append(link);
+      await new Promise((resolve,reject)=>{link.onload=resolve;link.onerror=reject;});
+    }
+    if(request!==printPreviewRequest||!host.isConnected)return;
+    stopPrintPreview?.();
+    host.innerHTML=renderPrintBody({...projectMenu(catalog,printLanguage),design:printDesign()});
+    const menu=host.querySelector('.isabella-print');
+    await paginatePrint(menu);
+    if(request!==printPreviewRequest||!host.isConnected)return;
+    stopPrintPreview=fitPrintPreview(menu);
+  }catch(error){if(host.isConnected)host.textContent=`No se pudo mostrar la vista previa: ${error.message}`;}
+}
 let dirty = false;
 let noticeTimer;
 let editorView = 'list';
@@ -630,23 +655,34 @@ function renderTools() {
   }
   const missing=Object.keys(printChoices).filter(value=>value!=='actual'&&!printAdded.includes(value));
   $('tools-panel').innerHTML=`<section class="print-workspace"><h2>Menú para imprimir</h2><p class="tool-intro">Cada propuesta toma los productos, precios y categorías de la carta guardada. Selecciona el diseño y el tamaño antes de generar el PDF.</p><div class="print-proposals"><label class="field"><span>Propuesta</span><select id="print-proposal">${['actual',...printAdded].map(value=>`<option value="${value}" ${printProposal===value?'selected':''}>${printChoices[value]}</option>`).join('')}</select></label>${missing.length?`<label class="field"><span>Añadir otra propuesta</span><select id="print-add-choice">${missing.map(value=>`<option value="${value}">${printChoices[value]}</option>`).join('')}</select></label><button type="button" class="btn" id="print-add">+ Añadir propuesta</button>`:''}</div><div class="print-controls"><label class="field"><span>Tamaño del papel</span><select id="print-size">${['A4','A3','A2'].map(value=>`<option value="${value}" ${printSize===value?'selected':''}>${value} · horizontal</option>`).join('')}</select></label><label class="field"><span>Idioma de la edición</span><select id="print-language"><option value="es" ${printLanguage==='es'?'selected':''}>Español</option><option value="en" ${printLanguage==='en'?'selected':''}>English</option></select></label><a class="btn" href="/api/admin/print/preview?lang=${printLanguage}&proposal=${printProposal}&size=${printSize}" target="_blank" rel="noopener">Vista previa ↗</a><button id="generate-print" type="button" class="primary-button" disabled>Generar PDF</button><button id="refresh-print" type="button" class="text-button">Actualizar estado</button></div><p id="print-feedback" role="status" aria-live="polite">Consultando las ediciones…</p><div id="print-status" class="print-status"></div><div id="print-current"></div><details class="print-archive"><summary>Archivo de PDF anteriores</summary><p>Estos archivos pueden contener diseños o datos anteriores. Usa la descarga de la propuesta seleccionada para compartir la versión vigente.</p><ul id="edition-list" class="edition-list"></ul></details></section>`;
+  const proposalSelect=$('print-proposal');
+  for(const item of printDrafts)proposalSelect.add(new Option(item.name,item.id,item.id===printProposal,item.id===printProposal));
+  if(printDrafts.length<2)$('tools-panel').querySelector('.print-proposals').insertAdjacentHTML('beforeend','<button type="button" class="btn" id="print-add">+ Nueva propuesta</button>');
+  $('tools-panel').querySelector('.print-proposals').insertAdjacentHTML('afterend',printDraftFields(selectedPrintDraft()));
+  $('tools-panel').querySelector('.print-controls a').href='/api/admin/print/preview?'+printQuery();
+  $('tools-panel').querySelector('.print-controls').insertAdjacentHTML('afterend','<section class="print-preview-panel" aria-label="Vista previa del menú"><h3>Vista previa de la composición</h3><div id="print-live-preview" tabindex="0" aria-label="Páginas del menú impreso, desplazables"></div></section>');
+  if(selectedPrintDraft()){
+    const editor=$('tools-panel').querySelector('.print-editor'),preview=$('tools-panel').querySelector('.print-preview-panel');
+    const workspace=document.createElement('div');workspace.className='print-design-workspace';editor.before(workspace);workspace.append(editor,preview);
+  }
+  $('tools-panel').querySelector('.tool-intro').textContent='El diseño actual se conserva. Crea hasta dos propuestas propias y ajusta su composición. Los platos y precios vienen de la carta guardada.';
   if(document.body.dataset.staticDemo==='true'){
     const preview=document.querySelector('.print-controls a');preview.dataset.demoPreview='true';preview.href='#impreso';
     preview.insertAdjacentHTML('afterend','<button type="button" class="btn" data-demo-print>Imprimir</button>');
   }
-  tablerComponents();refreshPrint();
+  tablerComponents();renderPrintPreview();refreshPrint();
 }
 async function refreshPrint() {
   try{
-    const data=await api(`/api/admin/print?lang=${printLanguage}&proposal=${printProposal}&size=${printSize}`);if(tab!=='print')return;
+    const data=await api('/api/admin/print?'+printQuery());if(tab!=='print')return;
     printVersion=data.version;
     $('print-feedback').textContent=document.body.dataset.staticDemo==='true'?'PDF e historial guardados en este navegador. Puedes descargar el archivo para compartirlo o imprimirlo.':'';
-    $('print-status').textContent=data.current?`${printChoices[printProposal]} · ${printSize} · ${printLanguage.toUpperCase()} actualizado.`:`Esta combinación todavía no tiene un PDF vigente. Cambios de contenido desde su última edición: ${data.changes.added} incorporaciones, ${data.changes.changed} modificaciones y ${data.changes.removed} retiradas.`;
+    $('print-status').textContent=data.current?`${printName(printProposal)} · ${printSize} · ${printLanguage.toUpperCase()} actualizado.`:`Esta combinación todavía no tiene un PDF vigente. Cambios de contenido desde su última edición: ${data.changes.added} incorporaciones, ${data.changes.changed} modificaciones y ${data.changes.removed} retiradas.`;
     $('generate-print').disabled=data.current;
     const active=data.editions.find(e=>e.current);
-    $('print-current').innerHTML=active?`<a class="btn btn-primary" data-edition="${escapeHtml(active.id)}" href="/api/admin/print/${encodeURIComponent(active.id)}.pdf">Descargar ${printChoices[printProposal]} · ${printSize} · ${printLanguage.toUpperCase()}</a>`:'';
-    const archive=data.editions.filter(e=>!e.legacy);
-    $('edition-list').innerHTML=archive.length?archive.map(e=>`<li><div><strong>${printChoices[e.proposal]||'Propuesta archivada'} · ${e.size} · ${e.language==='es'?'Español':'English'}</strong><small>${escapeHtml(new Date(e.createdAt).toLocaleString('es-CR'))} · ${escapeHtml(e.author)}</small><small>${e.current?'Selección vigente':'Archivo histórico; no compartir como menú actual'}</small></div><a class="btn" data-edition="${escapeHtml(e.id)}" href="/api/admin/print/${encodeURIComponent(e.id)}.pdf">Descargar archivo</a></li>`).join(''):'<li>Aún no hay archivos de esta versión.</li>';
+    $('print-current').innerHTML=active?`<a class="btn btn-primary" data-edition="${escapeHtml(active.id)}" href="/api/admin/print/${encodeURIComponent(active.id)}.pdf">Descargar ${escapeHtml(printName(printProposal))} · ${printSize} · ${printLanguage.toUpperCase()}</a>`:'';
+    const archive=data.editions.filter(e=>!e.legacy&&(e.proposal==='actual'||printDrafts.some(item=>item.id===e.proposal)));
+    $('edition-list').innerHTML=archive.length?archive.map(e=>`<li><div><strong>${escapeHtml(printName(e.proposal))} · ${e.size} · ${e.language==='es'?'Español':'English'}</strong><small>${escapeHtml(new Date(e.createdAt).toLocaleString('es-CR'))} · ${escapeHtml(e.author)}</small><small>${e.current?'Selección vigente':'Archivo histórico; no compartir como menú actual'}</small></div><a class="btn" data-edition="${escapeHtml(e.id)}" href="/api/admin/print/${encodeURIComponent(e.id)}.pdf">Descargar archivo</a></li>`).join(''):'<li>Aún no hay archivos de esta versión.</li>';
     if(document.body.dataset.staticDemo==='true')document.querySelectorAll('[data-edition]').forEach(link=>{
       const button=document.createElement('button');button.type='button';button.className=link.className;button.dataset.edition=link.dataset.edition;button.textContent=link.textContent;link.replaceWith(button);
     });
@@ -659,17 +695,39 @@ function updatePromotionPreview() {
   $('promotion-preview-text').textContent=form.elements[lang].value.trim() || (lang==='en'?'Your offer will appear here.':'Aquí aparecerá el texto de tu promoción.');
   $('promotion-preview-state').textContent=form.elements.enabled.checked?'Se mostrará en la carta al guardar.':'Oculta en la carta. Activa «Mostrar promoción» y guarda para publicarla.';
 }
-$('tools-panel').addEventListener('input',updatePromotionPreview);
-$('tools-panel').addEventListener('change',event=>{if(event.target.id==='print-language'){printLanguage=event.target.value;renderTools();}else if(event.target.id==='print-proposal'){printProposal=event.target.value;renderTools();}else if(event.target.id==='print-size'){printSize=event.target.value;renderTools();}else updatePromotionPreview();});
+$('tools-panel').addEventListener('input',event=>{if(!event.target.matches('[data-print-name],[data-print-design]'))updatePromotionPreview();});
+$('tools-panel').addEventListener('change',event=>{
+  if(event.target.matches('[data-print-name],[data-print-design]')){
+    const draft=selectedPrintDraft();if(!draft)return;
+    try{
+      const updated=readPrintDraft($('tools-panel'),draft,'isabella',printDrafts);
+      printDrafts=printDrafts.map(item=>item.id===draft.id?updated:item);savePrintDrafts('isabella',printDrafts);
+      $('print-proposal').selectedOptions[0].textContent=updated.name;
+      $('tools-panel').querySelector('.print-controls a').href='/api/admin/print/preview?'+printQuery();
+      $('tools-panel').querySelector('.print-editor-message').textContent='Propuesta guardada en este navegador.';
+      renderPrintPreview();refreshPrint();
+    }catch(error){$('tools-panel').querySelector('.print-editor-message').textContent=error.message;}
+    return;
+  }
+  if(event.target.id==='print-language'){printLanguage=event.target.value;renderTools();}
+  else if(event.target.id==='print-proposal'){printProposal=event.target.value;renderTools();}
+  else if(event.target.id==='print-size'){printSize=event.target.value;renderTools();}
+  else updatePromotionPreview();
+});
 $('tools-panel').addEventListener('click',async event=>{
   if(event.target.id==='print-add'){
-    const value=$('print-add-choice')?.value;
-    if(value&&!printAdded.includes(value)&&printAdded.length<2){printAdded.push(value);localStorage.setItem(printStorage,JSON.stringify(printAdded));printProposal=value;renderTools();}return;
+    if(printDrafts.length<2){const value=createPrintDraft('isabella',printDrafts.length+1);printDrafts.push(value);savePrintDrafts('isabella',printDrafts);printProposal=value.id;renderTools();}return;
+  }
+  if(event.target.closest('[data-print-delete]')){
+    const selected=selectedPrintDraft();
+    if(selected&&confirm('¿Eliminar la propuesta «'+selected.name+'»? Sus PDF dejarán de aparecer en esta lista.')){
+      printDrafts=printDrafts.filter(item=>item.id!==selected.id);savePrintDrafts('isabella',printDrafts);printProposal='actual';renderTools();
+    }return;
   }
   if(document.body.dataset.staticDemo==='true'){
     const action=event.target.closest('[data-demo-preview],[data-demo-print],[data-edition]');
     if(action){event.preventDefault();const popup=action.dataset.edition?null:window.open('','_blank');
-      try{const {demoPrint}=await import('./demo-store.js');if(action.dataset.edition)await demoPrint.download(action.dataset.edition);else await demoPrint.preview(printLanguage,popup,action.hasAttribute('data-demo-print'),printProposal,printSize);}
+      try{const {demoPrint}=await import('./demo-store.js');if(action.dataset.edition)await demoPrint.download(action.dataset.edition);else await demoPrint.preview(printLanguage,popup,action.hasAttribute('data-demo-print'),printProposal,printSize,printDesign());}
       catch(error){popup?.close();if($('print-feedback'))$('print-feedback').textContent=error.message;}return;
     }
   }
@@ -678,7 +736,7 @@ $('tools-panel').addEventListener('click',async event=>{
   if(event.target.id!=='generate-print')return;
   const button=event.target;button.disabled=true;button.textContent='Preparando PDF…';button.setAttribute('aria-busy','true');
   $('print-feedback').textContent='Puedes seguir trabajando cuando termine la generación.';
-  try{await api('/api/admin/print',{method:'POST',body:JSON.stringify({version:printVersion,language:printLanguage,proposal:printProposal,size:printSize})});await refreshPrint();if($('print-feedback'))$('print-feedback').textContent='PDF generado. Descárgalo desde la propuesta seleccionada.';}
+  try{await api('/api/admin/print',{method:'POST',body:JSON.stringify({version:printVersion,language:printLanguage,proposal:printProposal,size:printSize,design:printDesign()})});await refreshPrint();if($('print-feedback'))$('print-feedback').textContent='PDF generado. Descárgalo desde la propuesta seleccionada.';}
   catch(error){if($('print-feedback'))$('print-feedback').textContent=error.message;button.disabled=false;}
   finally{button.textContent='Generar PDF actualizado';button.removeAttribute('aria-busy');}
 });

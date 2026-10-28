@@ -186,14 +186,19 @@ async function handle(request, response) {
     if (path.startsWith('/api/admin/print')) {
       const session=await requireAdmin(request,response,request.method!=='GET','isabella.print');if(!session)return;
       const catalog=await readCatalog(), language=url.searchParams.get('lang') || 'es', proposal=url.searchParams.get('proposal') || 'actual', size=url.searchParams.get('size') || 'A4';
-      if(path==='/api/admin/print'&&request.method==='GET') return json(response,200,await printStatus(catalog,language,proposal,size));
+      let design=null;
+      if(url.searchParams.has('design')){
+        try{design=JSON.parse(url.searchParams.get('design'));}
+        catch{const error=new Error('El diseño de la propuesta no es válido.');error.status=400;throw error;}
+      }
+      if(path==='/api/admin/print'&&request.method==='GET') return json(response,200,await printStatus(catalog,language,proposal,size,design));
       if(path==='/api/admin/print'&&request.method==='POST'){
         let input;try{input=JSON.parse((await body(request,2048)).toString());}catch{return json(response,400,{error:'Datos inválidos.'});}
-        const edition=await generateEdition(input.version,input.language,session.username||session.userId||'Propietario',input.proposal,input.size);
+        const edition=await generateEdition(input.version,input.language,session.username||session.userId||'Propietario',input.proposal,input.size,input.design);
         return json(response,201,edition);
       }
       if(path==='/api/admin/print/preview'&&request.method==='GET'){
-        response.writeHead(200,headers({'content-type':'text/html; charset=utf-8','cache-control':'no-store'}));response.end(await printHtml(catalog,language,{},true,proposal,size));return;
+        response.writeHead(200,headers({'content-type':'text/html; charset=utf-8','cache-control':'no-store'}));response.end(await printHtml(catalog,language,{},true,proposal,size,design));return;
       }
       const match=/^\/api\/admin\/print\/([a-f0-9-]{36})\.pdf$/.exec(path);
       if(match&&request.method==='GET'){const pdf=await editionPdf(match[1]);response.writeHead(200,headers({'content-type':'application/pdf','content-disposition':'attachment; filename="Isabellas-'+match[1]+'.pdf"','cache-control':'private, no-store'}));response.end(pdf);return;}

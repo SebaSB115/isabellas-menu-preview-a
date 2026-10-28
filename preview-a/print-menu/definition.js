@@ -51,8 +51,8 @@ export async function createPrintDefinition(snapshot,edition,logo,pdf){
       for(const element of page.querySelectorAll('h2,h3,strong,.isa-dish p,.isa-variant span,.isa-chapter-head>span,.isa-print-footer p,.isa-print-footer>span,.isa-print-empty,.isa-print-digital p'))content.push(...linesOf(element,paper));
       for(const qr of page.querySelectorAll('[data-qr-url]')){const rect=qr.getBoundingClientRect();content.push({qr:qr.dataset.qrUrl,fit:point(rect.width),padding:4,eccLevel:'M',absolutePosition:{x:point(rect.left-paper.left),y:point(rect.top-paper.top)}});}
     });
-    const factor=paperScale(snapshot.size),proposal=snapshot.proposal || 'actual';
-    const background={stack:[...(proposal==='actual'?[{image:'ivory',width:841.89,height:595.28,absolutePosition:{x:0,y:0}}]:[]),{svg:paperArtwork(proposal),width:841.89,height:595.28,absolutePosition:{x:0,y:0}}]};
+    const factor=paperScale(snapshot.size);
+    const background={stack:[{image:'ivory',width:841.89,height:595.28,absolutePosition:{x:0,y:0}},...(snapshot.design?.ornament===false?[]:[{svg:paperArtwork(snapshot.design?.columns!==1),width:841.89,height:595.28,absolutePosition:{x:0,y:0}}])]};
     return {
       pageSize:snapshot.size || 'A4',pageOrientation:'landscape',pageMargins:0,
       info:{title:'Isabella’s · '+(snapshot.language==='en'?'Printed menu':'Menú impreso'),author:'Isabella’s',subject:'Revision '+edition.version},

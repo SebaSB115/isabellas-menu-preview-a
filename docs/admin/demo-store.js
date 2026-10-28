@@ -72,9 +72,9 @@ export async function api(path, options = {}) {
     if (sessionStorage.getItem(key) !== '1') throw new Error('Inicia la demostración.');
     if (path === '/api/admin/print' && options.method === 'POST') {
       const data = JSON.parse(options.body);
-      return demoPrint.generate(data.version, data.language, data.proposal, data.size);
+      return demoPrint.generate(data.version, data.language, data.proposal, data.size,data.design);
     }
-    if (!options.method || options.method === 'GET') {const query=new URL(path,location.origin).searchParams;return demoPrint.status(query.get('lang') || 'es',query.get('proposal') || 'actual',query.get('size') || 'A4');}
+      if (!options.method || options.method === 'GET') {const query=new URL(path,location.origin).searchParams;return demoPrint.status(query.get('lang') || 'es',query.get('proposal') || 'actual',query.get('size') || 'A4',query.has('design')?JSON.parse(query.get('design')):null);}
   }
   if(path==='/api/admin/content'&&options.method==='PUT'){
     const previous=readCatalog(),incoming=JSON.parse(options.body);

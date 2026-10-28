@@ -6,8 +6,9 @@ const upstream=await readFile(resolve(repo,'preview-a/shared-print/engine.js'),'
 let engine=upstream;
 function replace(from,to){if(engine.split(from).length!==2)throw new Error('El motor compartido cambió; revisa la adaptación de Isabella.');engine=engine.replace(from,to);}
 replace("new URL('./vendor/', import.meta.url)","new URL('../shared-print/vendor/', import.meta.url)");
+replace("from './design.js';","from '../shared-print/design.js';");
 replace('return { layout:1, brand, language,','return { layout:PRINT_DESIGN_VERSION, brand, language,');
-replace('return pdf.createPdf(definition(selected(catalog, language, edition.proposal, edition.size), edition, image));','return pdf.createPdf(await createPrintDefinition(selected(catalog, language, edition.proposal, edition.size), edition, image, pdf));');
+replace('return pdf.createPdf(definition(selected(catalog, language, edition.proposal, edition.size, edition.design), edition, image));','return pdf.createPdf(await createPrintDefinition(selected(catalog, language, edition.proposal, edition.size, edition.design), edition, image, pdf));');
 const start=engine.indexOf('export function definition('),end=engine.indexOf('export function createPrintService');
 if(start<0||end<start)throw new Error('No se encontró la definición del PDF compartido.');
 engine=engine.slice(0,start)+'export async function definition(snapshot,edition,logo){return createPrintDefinition(snapshot,edition,logo,await renderer());}\n'+engine.slice(end);
