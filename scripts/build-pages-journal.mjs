@@ -4,6 +4,11 @@ import {createHash} from 'node:crypto';
 const repo=resolve(import.meta.dirname,'..'),source=resolve(repo,'preview-a'),target=resolve(repo,'docs');
 await cp(resolve(source,'design-lab'),resolve(target,'design-lab'),{recursive:true,force:true});
 for(const name of ['index.html','entry.js','borrador-1.html'])await copyFile(resolve(source,name),resolve(target,name));
+const currentMenu='./journal-fluido.html';
+for(const oldPage of ['journal.html','il-libro.html']){
+  await writeFile(resolve(target,'design-lab',oldPage),`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><meta http-equiv="refresh" content="0;url=${currentMenu}"><title>Carta de Isabella's</title></head><body><a href="${currentMenu}">Abrir la carta actual</a></body></html>\n`);
+}
+await writeFile(resolve(target,'borrador-1.html'),`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><meta http-equiv="refresh" content="0;url=./"><title>Carta de Isabella's</title></head><body><a href="./">Abrir la carta actual</a></body></html>\n`);
 const flowPath=resolve(target,'design-lab/journal-fluido.js');
 let flow=await readFile(flowPath,'utf8');
 const request="  const response=await fetch('../api/menu',{cache:'no-store'});\n  if(!response.ok)throw new Error('No se pudo leer la carta.');\n  return response.json();";

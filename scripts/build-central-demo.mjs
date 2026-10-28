@@ -28,18 +28,7 @@ await writeFile(isabella, redirectPage('../../admin/', 'Isabella’s'));
 const boccantina = resolve(target, 'boccantina', 'index.html');
 await writeFile(boccantina, redirectPage('https://sebasb115.github.io/boccantina-preview/admin/login/', 'Boccantina'));
 const previous = resolve(target, 'anterior.html');
-let previousHtml = await readFile(previous, 'utf8');
-previousHtml = previousHtml.replace('Acceso privado · preview local', 'Vista de demostración')
-  .replace('<span class="portal-environment__short">Local</span>', '<span class="portal-environment__short">Demo</span>')
-  .replace('Elige un restaurante. Para entrar a su administración necesitarás el usuario y la contraseña de esa tienda.', 'Selecciona un restaurante para ver las herramientas administrativas que ya están disponibles en su demo.')
-  .replace('<strong>Accesos independientes</strong><span>Cada restaurante tiene su propia cuenta y sus herramientas.</span>', '<strong>Espacios separados</strong><span>Cada restaurante conserva sus propias herramientas de demostración.</span>')
-  .replace('<strong>Entorno de prueba</strong><p>Esta central reúne las administraciones de Isabella\'s y Boccantina en un preview local. Ninguna está conectada a producción.</p>', '<strong>Estado del preview</strong><p>Esta entrada reúne las administraciones existentes. Todavía no comparte usuarios ni datos entre restaurantes y no está conectada a producción.</p>');
-await writeFile(previous, previousHtml);
+await writeFile(previous, redirectPage('./', 'restaurantes'));
 const proposal = resolve(target, 'propuesta-1.html');
-let proposalHtml = await readFile(proposal, 'utf8');
-proposalHtml = proposalHtml
-  .replace('Vista de diseño', 'Vista de demostración')
-  .replace('Entrar a Isabella’s', 'Ver Isabella’s')
-  .replace('Entrar a Boccantina', 'Ver Boccantina');
-await writeFile(proposal, proposalHtml);
+await writeFile(proposal, redirectPage('./', 'restaurantes'));
 console.log('Selector de restaurantes generado en docs/central/.');
