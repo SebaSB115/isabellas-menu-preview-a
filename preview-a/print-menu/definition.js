@@ -2,6 +2,12 @@ import {renderPrintBody,paginatePrint,paperArtwork} from './layout.js';
 let stylesheet;
 const point = px => px * 72 / 96;
 const color = css => '#'+css.match(/\d+/g).slice(0,3).map(n=>Number(n).toString(16).padStart(2,'0')).join('');
+const paperScale = size => ({A4:1,A3:Math.SQRT2,A2:2})[size] || 1;
+function scaleNode(value, factor, key = '') {
+  if (Array.isArray(value)) return value.map(item => scaleNode(item, factor, key));
+  if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([name,item]) => [name,scaleNode(item,factor,name)]));
+  return typeof value === 'number' && ['fontSize','width','height','fit','x','y','x1','x2','y1','y2','lineWidth','characterSpacing','padding','margin'].includes(key) ? value * factor : value;
+}
 function loadStyles(){
   return stylesheet ||= new Promise((resolve,reject)=>{
     const link=document.createElement('link');link.rel='stylesheet';link.href=new URL('./style.css',import.meta.url).href;
@@ -45,12 +51,14 @@ export async function createPrintDefinition(snapshot,edition,logo,pdf){
       for(const element of page.querySelectorAll('h2,h3,strong,.isa-dish p,.isa-variant span,.isa-chapter-head>span,.isa-print-footer p,.isa-print-footer>span,.isa-print-empty,.isa-print-digital p'))content.push(...linesOf(element,paper));
       for(const qr of page.querySelectorAll('[data-qr-url]')){const rect=qr.getBoundingClientRect();content.push({qr:qr.dataset.qrUrl,fit:point(rect.width),padding:4,eccLevel:'M',absolutePosition:{x:point(rect.left-paper.left),y:point(rect.top-paper.top)}});}
     });
+    const factor=paperScale(snapshot.size),proposal=snapshot.proposal || 'actual';
+    const background={stack:[...(proposal==='actual'?[{image:'ivory',width:841.89,height:595.28,absolutePosition:{x:0,y:0}}]:[]),{svg:paperArtwork(proposal),width:841.89,height:595.28,absolutePosition:{x:0,y:0}}]};
     return {
-      pageSize:'A4',pageOrientation:'landscape',pageMargins:0,
+      pageSize:snapshot.size || 'A4',pageOrientation:'landscape',pageMargins:0,
       info:{title:'Isabella’s · '+(snapshot.language==='en'?'Printed menu':'Menú impreso'),author:'Isabella’s',subject:'Revision '+edition.version},
       images:{ivory:texture},
-      background:()=>({stack:[{image:'ivory',width:841.89,height:595.28,absolutePosition:{x:0,y:0}},{svg:paperArtwork(),width:841.89,height:595.28,absolutePosition:{x:0,y:0}}]}),
-      defaultStyle:{font:'NotoSans',fontSize:9.2,color:'#39352e'},content
+      background:()=>scaleNode(background,factor),
+      defaultStyle:{font:'NotoSans',fontSize:9.2*factor,color:'#39352e'},content:scaleNode(content,factor)
     };
   }finally{menu.remove();}
 }

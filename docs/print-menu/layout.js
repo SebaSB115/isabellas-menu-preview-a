@@ -15,7 +15,9 @@ export function projectMenu(catalog, language = 'es') {
   })),publicUrl:catalog.settings?.publicUrl || ''};
 }
 
-export function paperArtwork() {
+export function paperArtwork(proposal = 'actual') {
+  if (proposal === 'sobria') return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1123 794"><rect width="1123" height="794" fill="#fffdf8"/><path d="M31 31H1092M31 763H1092" stroke="#7c5360" stroke-width="2"/></svg>';
+  if (proposal === 'editorial') return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1123 794"><rect width="1123" height="794" fill="#f5ebdf"/><path d="M23 23H1100M23 771H1100" stroke="#633644" stroke-width="2"/><path d="M561 142V720" stroke="#b89881" stroke-width="1"/></svg>';
   const corner = '<g fill="none" stroke="#b4a16b" stroke-width=".85" stroke-linecap="round"><path d="M2 62V2H62M7 54V7H54M2 38C12 38 23 30 23 20S12 8 12 16C12 24 30 24 37 14S53 9 49 17C46 25 35 21 41 15M7 47C17 44 22 39 26 30M30 26C39 22 44 17 47 7"/><path d="M16 33C5 31 9 22 14 25S18 30 16 33ZM33 16C31 5 22 9 25 14S30 18 33 16ZM28 25C23 18 30 14 33 20S30 24 28 25ZM25 28C18 23 14 30 20 33S24 30 25 28Z"/><circle cx="11" cy="11" r="1.7"/></g>';
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1123 794" width="1123" height="794" aria-hidden="true">
     <rect width="1123" height="794" fill="#faf8ef" opacity=".62"/>
@@ -32,10 +34,11 @@ export function renderPrintBody(snapshot, assets = {}) {
   const texture = assets.texture || new URL('./assets/ivory-marble.png', import.meta.url).href;
   const price = p => p == null ? (en ? 'Ask for price' : 'Consultar precio') : '₡'+new Intl.NumberFormat('en-US').format(p);
   const variant = v => `<div class="isa-variant"><span>${escape(v.label)}</span><strong>${escape(price(v.price))}</strong></div>`;
-  return `<main class="isabella-print" data-language="${snapshot.language}" aria-label="${en?'Printed menu':'Menú impreso'}">
+  const proposal = ['actual','sobria','editorial'].includes(snapshot.proposal) ? snapshot.proposal : 'actual';
+  return `<main class="isabella-print" data-language="${snapshot.language}" data-proposal="${proposal}" aria-label="${en?'Printed menu':'Menú impreso'}">
     <template data-print-source>${snapshot.groups.map(g=>`<section data-group="${escape(g.id)}"><h2>${escape(g.title)}</h2>${g.items.map(i=>`<article class="isa-dish" data-product-id="${escape(i.id)}"><div class="isa-dish-title"><h3>${escape(i.name)}</h3>${i.options.length?'':`<strong>${escape(price(i.price))}</strong>`}</div>${i.description?`<p>${escape(i.description)}</p>`:''}${i.options.map(variant).join('')}${i.addon?variant(i.addon):''}</article>`).join('')}</section>`).join('')}</template>
     <template data-print-paper><div class="isa-print-page"><section class="isa-print-sheet">
-      <div class="isa-paper-art"><img class="isa-paper-texture" src="${escape(texture)}" alt="">${paperArtwork()}</div>
+      <div class="isa-paper-art">${proposal==='actual'?`<img class="isa-paper-texture" src="${escape(texture)}" alt="">`:''}${paperArtwork(proposal)}</div>
       <header class="isa-print-masthead"><img src="${escape(logo)}" alt="Isabella’s · Pizzería & Wine Bar"></header>
       <div class="isa-print-columns"><div class="isa-print-column"></div><div class="isa-print-column"></div></div>
       <footer class="isa-print-footer"><p>${en?'Prices in Costa Rican colones. Taxes included; 10% service not included.':'Precios en colones costarricenses. Incluyen impuestos; no incluyen 10 % de servicio.'}</p><span data-page-number></span></footer>

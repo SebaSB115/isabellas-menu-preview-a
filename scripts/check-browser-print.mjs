@@ -78,11 +78,11 @@ try{
       },brand);
     });
     await page.click(refresh);await page.waitForFunction(s=>!document.querySelector(s).disabled,{},generate);
-    await page.click(generate);await page.waitForFunction(()=>document.querySelectorAll('[data-edition]').length===2,{timeout:60000});
+    await page.click(generate);await page.waitForFunction(brand=>document.querySelectorAll(brand==='isabella'?'.edition-list [data-edition]':'.print-editions [data-edition]').length===2,{timeout:60000},brand);
     assert.notEqual(await page.$eval('[data-edition]',e=>e.dataset.edition),firstId);
     await page.click('[data-edition]');
     await page.select(language,'en');await page.waitForFunction(s=>!document.querySelector(s).disabled,{},generate);
-    await page.click(generate);await page.waitForFunction(()=>document.querySelectorAll('[data-edition]').length===3,{timeout:60000});
+    await page.click(generate);await page.waitForFunction(brand=>document.querySelectorAll(brand==='isabella'?'.edition-list [data-edition]':'.print-editions [data-edition]').length===3,{timeout:60000},brand);
     await page.click('[data-edition]');
     // Preview must create and open a PDF; print must set the PDF Print action.
     for(const selector of [isabella?'[data-demo-preview]':'[data-preview-print]',isabella?'[data-demo-print]':'[data-browser-print]']){
@@ -119,7 +119,37 @@ try{
     },brand);
     for(const key of ['conflict','blocked','availabilityIgnored','hiddenExcluded'])assert(edgeCases[key],`${brand} ${key}`);
     await writeFile(resolve(directory,'long-text.pdf'),Buffer.from(edgeCases.pdf));
-    report.push({brand,download:filename,bytes:bytes.length,products:snapshot.groups.reduce((n,g)=>n+g.items.length,0),widths:[320,390,768,1440],history:true,priceChange:true,english:true,preview:true,printAction:true});
+    const proposalSelector=isabella?'#print-add-choice':'[data-print-add-choice]';
+    const addButton=isabella?'#print-add':'[data-print-add]';
+    const sizeSelector=isabella?'#print-size':'[data-print-size]';
+    const proposalSelectorActive=isabella?'#print-proposal':'[data-print-proposal]';
+    for(const [proposal,size,expectedWidth] of [['sobria','A3',1190],['editorial','A2',1683]]){
+      await page.select(proposalSelector,proposal);await page.click(addButton);
+      await page.waitForSelector(`${proposalSelectorActive} option[value=${proposal}]`);
+      await page.select(sizeSelector,size);await page.waitForFunction(s=>!document.querySelector(s).disabled,{},generate);
+      await page.click(generate);
+      await page.waitForFunction(brand=>Boolean(document.querySelector(brand==='isabella'?'#print-current [data-edition]':'.print-download[data-edition]')),{timeout:90000},brand);
+      const result=await page.evaluate(async brand=>{
+        const selector=brand==='isabella'?'#print-current [data-edition]':'.print-download[data-edition]';
+        const id=document.querySelector(selector).dataset.edition;
+        const db=await new Promise((resolve,reject)=>{const request=indexedDB.open(`${brand}-demo-print-v1`);request.onsuccess=()=>resolve(request.result);request.onerror=reject;});
+        const blob=await new Promise((resolve,reject)=>{const request=db.transaction('files').objectStore('files').get(id);request.onsuccess=()=>resolve(request.result);request.onerror=reject;});db.close();
+        return Array.from(new Uint8Array(await blob.arrayBuffer()));
+      },brand);
+      const variantPdf=Buffer.from(result),media=variantPdf.toString('latin1').match(/\/MediaBox\s*\[\s*0\s+0\s+([\d.]+)\s+([\d.]+)/);
+      assert(media,`${brand} ${size} missing MediaBox`);
+      const dimensions=[Number(media[1]),Number(media[2])];
+      assert(dimensions.some(value=>Math.abs(value-(isabella?expectedWidth:size==='A3'?841.89:1190.55))<4),`${brand} ${size} incorrect MediaBox: ${dimensions}`);
+      await writeFile(resolve(directory,`${proposal}-${size}.pdf`),variantPdf);
+    }
+    await page.evaluate(async brand=>{
+      const db=await new Promise((resolve,reject)=>{const request=indexedDB.open(`${brand}-demo-print-v1`);request.onsuccess=()=>resolve(request.result);request.onerror=reject;});
+      await new Promise((resolve,reject)=>{const transaction=db.transaction('editions','readwrite');transaction.objectStore('editions').put({id:'legacy-qa',fingerprint:'old-design',language:'es',version:1,revision:1,author:'Archivo anterior',createdAt:'2026-10-27T00:00:00.000Z',snapshot:{groups:[]}});transaction.oncomplete=resolve;transaction.onerror=reject;});db.close();
+    },brand);
+    await page.click(refresh);
+    await page.waitForFunction(brand=>!document.querySelector(brand==='isabella'?'#print-feedback':'#feedback')?.textContent?.includes('Consultando'),{},brand);
+    assert.equal(await page.$('[data-edition="legacy-qa"]'),null,`${brand}: el PDF antiguo aparece en la interfaz`);
+    report.push({brand,download:filename,bytes:bytes.length,products:snapshot.groups.reduce((n,g)=>n+g.items.length,0),widths:[320,390,768,1440],history:true,priceChange:true,english:true,preview:true,printAction:true,proposals:['actual','sobria','editorial'],sizes:['A4','A3','A2']});
     await context.close();
   }
   await writeFile(resolve(output,'report.json'),JSON.stringify(report,null,2));

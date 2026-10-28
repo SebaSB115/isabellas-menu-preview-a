@@ -147,6 +147,14 @@ try{
   const second=await request('/api/admin/print','POST',{version:status.version,language:'es'});assert.equal(second.status,201);assert.notEqual(second.data.id,first.id);
   assert.deepEqual(await readFile(resolve(data,'print-editions',first.id+'.pdf')),pdf);
   assert.equal((await request('/api/admin/print','POST',{version:status.version,language:'en'})).status,201);
+  for(const [proposal,size,expected] of [['sobria','A3',1190],['editorial','A2',1683]]){
+    const variant=await request('/api/admin/print','POST',{version:status.version,language:'es',proposal,size});assert.equal(variant.status,201);
+    const bytes=await readFile(resolve(data,'print-editions',variant.data.id+'.pdf'));
+    const media=bytes.toString('latin1').match(/\/MediaBox\s*\[\s*0\s+0\s+([\d.]+)\s+([\d.]+)/);
+    assert(media && [Number(media[1]),Number(media[2])].some(value=>Math.abs(value-expected)<4),`${proposal} ${size}: tamaño PDF incorrecto`);
+    assert((bytes.toString('latin1').match(/\/Type\s*\/Page\b/g)||[]).length<=8,`${proposal} ${size}: paginación inesperada`);
+    assert.equal((await request(`/api/admin/print?lang=es&proposal=${proposal}&size=${size}`)).data.current,true);
+  }
   pass('PDF real: todos los platos, historial inmutable, cambio detectado, conflicto y duplicado controlados');
   await page.bringToFront();await tab('products');await page.click('[data-product]');
   await fill('[name=price]','6500');

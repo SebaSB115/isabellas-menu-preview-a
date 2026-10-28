@@ -72,9 +72,9 @@ export async function api(path, options = {}) {
     if (sessionStorage.getItem(key) !== '1') throw new Error('Inicia la demostración.');
     if (path === '/api/admin/print' && options.method === 'POST') {
       const data = JSON.parse(options.body);
-      return demoPrint.generate(data.version, data.language);
+      return demoPrint.generate(data.version, data.language, data.proposal, data.size);
     }
-    if (!options.method || options.method === 'GET') return demoPrint.status(new URL(path, location.origin).searchParams.get('lang') || 'es');
+    if (!options.method || options.method === 'GET') {const query=new URL(path,location.origin).searchParams;return demoPrint.status(query.get('lang') || 'es',query.get('proposal') || 'actual',query.get('size') || 'A4');}
   }
   if(path==='/api/admin/content'&&options.method==='PUT'){
     const previous=readCatalog(),incoming=JSON.parse(options.body);

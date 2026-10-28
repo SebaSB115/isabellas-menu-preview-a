@@ -22,6 +22,11 @@ let baseline = '';
 let saving = false;
 let uploading = false;
 let printLanguage = 'es';
+const printChoices = {actual:'Diseño actual',sobria:'Sobria',editorial:'Editorial'};
+const printStorage = 'isabella-print-proposals-v2';
+let printAdded = (() => { try { return JSON.parse(localStorage.getItem(printStorage) || '[]').filter(value => ['sobria','editorial'].includes(value)); } catch { return []; } })();
+let printProposal = 'actual';
+let printSize = 'A4';
 let printVersion = null;
 let dirty = false;
 let noticeTimer;
@@ -628,7 +633,8 @@ function renderTools() {
       <div class="form-actions"><span class="product-edit-state" role="status">${escapeHtml(categoryFeedback)}</span><button class="primary-button" type="submit">Guardar promoción</button></div></form>`;
     prepareForm();updatePromotionPreview();return;
   }
-  $('tools-panel').innerHTML=`<section class="print-workspace"><h2>Ediciones para el local</h2><p class="tool-intro">A4 horizontal, con composición propia para imprimir. Toma nombres, descripciones, categorías, variantes y precios del mismo catálogo. Los productos ocultos se excluyen; la disponibilidad de hoy no cambia la edición física.</p><div class="print-controls"><label class="field"><span>Idioma de la edición</span><select id="print-language"><option value="es" ${printLanguage==='es'?'selected':''}>Español</option><option value="en" ${printLanguage==='en'?'selected':''}>English</option></select></label><a class="btn" href="/api/admin/print/preview?lang=${printLanguage}" target="_blank" rel="noopener">Vista previa ↗</a><button id="generate-print" type="button" class="primary-button" disabled>Generar PDF actualizado</button><button id="refresh-print" type="button" class="text-button">Actualizar estado</button></div><p id="print-feedback" role="status" aria-live="polite">Consultando las ediciones…</p><div id="print-status" class="print-status"></div><h3 class="mt-4">Historial de ediciones</h3><ul id="edition-list" class="edition-list"></ul></section>`;
+  const missing=Object.keys(printChoices).filter(value=>value!=='actual'&&!printAdded.includes(value));
+  $('tools-panel').innerHTML=`<section class="print-workspace"><h2>Menú para imprimir</h2><p class="tool-intro">Cada propuesta toma los productos, precios y categorías de la carta guardada. Selecciona el diseño y el tamaño antes de generar el PDF.</p><div class="print-proposals"><label class="field"><span>Propuesta</span><select id="print-proposal">${['actual',...printAdded].map(value=>`<option value="${value}" ${printProposal===value?'selected':''}>${printChoices[value]}</option>`).join('')}</select></label>${missing.length?`<label class="field"><span>Añadir otra propuesta</span><select id="print-add-choice">${missing.map(value=>`<option value="${value}">${printChoices[value]}</option>`).join('')}</select></label><button type="button" class="btn" id="print-add">+ Añadir propuesta</button>`:''}</div><div class="print-controls"><label class="field"><span>Tamaño del papel</span><select id="print-size">${['A4','A3','A2'].map(value=>`<option value="${value}" ${printSize===value?'selected':''}>${value} · horizontal</option>`).join('')}</select></label><label class="field"><span>Idioma de la edición</span><select id="print-language"><option value="es" ${printLanguage==='es'?'selected':''}>Español</option><option value="en" ${printLanguage==='en'?'selected':''}>English</option></select></label><a class="btn" href="/api/admin/print/preview?lang=${printLanguage}&proposal=${printProposal}&size=${printSize}" target="_blank" rel="noopener">Vista previa ↗</a><button id="generate-print" type="button" class="primary-button" disabled>Generar PDF</button><button id="refresh-print" type="button" class="text-button">Actualizar estado</button></div><p id="print-feedback" role="status" aria-live="polite">Consultando las ediciones…</p><div id="print-status" class="print-status"></div><div id="print-current"></div><details class="print-archive"><summary>Archivo de PDF anteriores</summary><p>Estos archivos pueden contener diseños o datos anteriores. Usa la descarga de la propuesta seleccionada para compartir la versión vigente.</p><ul id="edition-list" class="edition-list"></ul></details></section>`;
   if(document.body.dataset.staticDemo==='true'){
     const preview=document.querySelector('.print-controls a');preview.dataset.demoPreview='true';preview.href='#impreso';
     preview.insertAdjacentHTML('afterend','<button type="button" class="btn" data-demo-print>Imprimir</button>');
@@ -637,12 +643,15 @@ function renderTools() {
 }
 async function refreshPrint() {
   try{
-    const data=await api('/api/admin/print?lang='+printLanguage);if(tab!=='print')return;
+    const data=await api(`/api/admin/print?lang=${printLanguage}&proposal=${printProposal}&size=${printSize}`);if(tab!=='print')return;
     printVersion=data.version;
     $('print-feedback').textContent=document.body.dataset.staticDemo==='true'?'PDF e historial guardados en este navegador. Puedes descargar el archivo para compartirlo o imprimirlo.':'';
-    $('print-status').textContent=data.current?'El PDF de este idioma está actualizado.':`Pendiente de generar · ${data.changes.added} incorporaciones, ${data.changes.changed} modificaciones y ${data.changes.removed} retiradas desde la última edición.`;
+    $('print-status').textContent=data.current?`${printChoices[printProposal]} · ${printSize} · ${printLanguage.toUpperCase()} actualizado.`:`Esta combinación todavía no tiene un PDF vigente. Cambios de contenido desde su última edición: ${data.changes.added} incorporaciones, ${data.changes.changed} modificaciones y ${data.changes.removed} retiradas.`;
     $('generate-print').disabled=data.current;
-    $('edition-list').innerHTML=data.editions.length?data.editions.map(e=>`<li><div><strong>${e.language==='es'?'Español':'English'} · revisión ${e.version}</strong><small>${escapeHtml(new Date(e.createdAt).toLocaleString('es-CR'))} · ${escapeHtml(e.author)}</small><small>${e.current?'Contenido vigente':'Edición anterior · conservada'}</small></div><a class="btn" data-edition="${escapeHtml(e.id)}" href="/api/admin/print/${encodeURIComponent(e.id)}.pdf">Descargar PDF</a></li>`).join(''):'<li>Aún no se ha generado ninguna edición.</li>';
+    const active=data.editions.find(e=>e.current);
+    $('print-current').innerHTML=active?`<a class="btn btn-primary" data-edition="${escapeHtml(active.id)}" href="/api/admin/print/${encodeURIComponent(active.id)}.pdf">Descargar ${printChoices[printProposal]} · ${printSize} · ${printLanguage.toUpperCase()}</a>`:'';
+    const archive=data.editions.filter(e=>!e.legacy);
+    $('edition-list').innerHTML=archive.length?archive.map(e=>`<li><div><strong>${printChoices[e.proposal]||'Propuesta archivada'} · ${e.size} · ${e.language==='es'?'Español':'English'}</strong><small>${escapeHtml(new Date(e.createdAt).toLocaleString('es-CR'))} · ${escapeHtml(e.author)}</small><small>${e.current?'Selección vigente':'Archivo histórico; no compartir como menú actual'}</small></div><a class="btn" data-edition="${escapeHtml(e.id)}" href="/api/admin/print/${encodeURIComponent(e.id)}.pdf">Descargar archivo</a></li>`).join(''):'<li>Aún no hay archivos de esta versión.</li>';
     if(document.body.dataset.staticDemo==='true')document.querySelectorAll('[data-edition]').forEach(link=>{
       const button=document.createElement('button');button.type='button';button.className=link.className;button.dataset.edition=link.dataset.edition;button.textContent=link.textContent;link.replaceWith(button);
     });
@@ -656,12 +665,16 @@ function updatePromotionPreview() {
   $('promotion-preview-state').textContent=form.elements.enabled.checked?'Se mostrará en la carta al guardar.':'Oculta en la carta. Activa «Mostrar promoción» y guarda para publicarla.';
 }
 $('tools-panel').addEventListener('input',updatePromotionPreview);
-$('tools-panel').addEventListener('change',event=>{if(event.target.id==='print-language'){printLanguage=event.target.value;renderTools();}else updatePromotionPreview();});
+$('tools-panel').addEventListener('change',event=>{if(event.target.id==='print-language'){printLanguage=event.target.value;renderTools();}else if(event.target.id==='print-proposal'){printProposal=event.target.value;renderTools();}else if(event.target.id==='print-size'){printSize=event.target.value;renderTools();}else updatePromotionPreview();});
 $('tools-panel').addEventListener('click',async event=>{
+  if(event.target.id==='print-add'){
+    const value=$('print-add-choice')?.value;
+    if(value&&!printAdded.includes(value)&&printAdded.length<2){printAdded.push(value);localStorage.setItem(printStorage,JSON.stringify(printAdded));printProposal=value;renderTools();}return;
+  }
   if(document.body.dataset.staticDemo==='true'){
     const action=event.target.closest('[data-demo-preview],[data-demo-print],[data-edition]');
     if(action){event.preventDefault();const popup=action.dataset.edition?null:window.open('','_blank');
-      try{const {demoPrint}=await import('./demo-store.js');if(action.dataset.edition)await demoPrint.download(action.dataset.edition);else await demoPrint.preview(printLanguage,popup,action.hasAttribute('data-demo-print'));}
+      try{const {demoPrint}=await import('./demo-store.js');if(action.dataset.edition)await demoPrint.download(action.dataset.edition);else await demoPrint.preview(printLanguage,popup,action.hasAttribute('data-demo-print'),printProposal,printSize);}
       catch(error){popup?.close();if($('print-feedback'))$('print-feedback').textContent=error.message;}return;
     }
   }
@@ -670,7 +683,7 @@ $('tools-panel').addEventListener('click',async event=>{
   if(event.target.id!=='generate-print')return;
   const button=event.target;button.disabled=true;button.textContent='Preparando PDF…';button.setAttribute('aria-busy','true');
   $('print-feedback').textContent='Puedes seguir trabajando cuando termine la generación.';
-  try{await api('/api/admin/print',{method:'POST',body:JSON.stringify({version:printVersion,language:printLanguage})});await refreshPrint();if($('print-feedback'))$('print-feedback').textContent='PDF generado. La edición ya está disponible para descargar.';}
+  try{await api('/api/admin/print',{method:'POST',body:JSON.stringify({version:printVersion,language:printLanguage,proposal:printProposal,size:printSize})});await refreshPrint();if($('print-feedback'))$('print-feedback').textContent='PDF generado. Descárgalo desde la propuesta seleccionada.';}
   catch(error){if($('print-feedback'))$('print-feedback').textContent=error.message;button.disabled=false;}
   finally{button.textContent='Generar PDF actualizado';button.removeAttribute('aria-busy');}
 });
