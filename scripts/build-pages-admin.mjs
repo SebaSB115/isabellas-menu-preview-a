@@ -2,6 +2,7 @@ import { mkdir, readFile, writeFile, copyFile, cp } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import './sync-tabler.mjs';
+import './sync-isabella-print.mjs';
 const repo=resolve(dirname(fileURLToPath(import.meta.url)),'..'),source=resolve(repo,'preview-a/admin'),target=resolve(repo,'docs/admin');
 let html=(await readFile(resolve(source,'index.html'),'utf8')).replace(/\r\n/g,'\n');
 html=html.replace('<body>','<body data-static-demo="true">')
@@ -19,6 +20,7 @@ app += "\n$('reset-demo').addEventListener('click',async()=>{if(!await guard())r
 app=app.replace('Al guardar se traduce automáticamente al inglés con el motor local gratuito. Puedes revisar y ajustar la traducción.','En la demo estática, escribe el inglés manualmente. El motor automático está disponible en el servidor local.');
 await mkdir(target,{recursive:true});
 await cp(resolve(repo,'preview-a/shared-print'),resolve(repo,'docs/shared-print'),{recursive:true});
+await cp(resolve(repo,'preview-a/print-menu'),resolve(repo,'docs/print-menu'),{recursive:true});
 await Promise.all([writeFile(resolve(target,'index.html'),html),writeFile(resolve(target,'app.js'),app),
   ...['style.css','tabler-workspace.css','form-state.js','demo-store.js'].map(file=>copyFile(resolve(source,file),resolve(target,file)))]);
 console.log('Demo generada desde la fuente administrativa y su adaptador estático.');

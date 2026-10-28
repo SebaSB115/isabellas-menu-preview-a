@@ -4,15 +4,11 @@ import { createHash, randomUUID } from 'node:crypto';
 import { dataDir, readCatalog } from './menu-store.mjs';
 import { launchBrowser } from './qa-browser-support.mjs';
 import QRCode from 'qrcode';
+import {PRINT_DESIGN_VERSION, visibleCategories as visible, projectMenu, renderPrintBody} from '../preview-a/print-menu/layout.js';
 
 const archive = resolve(dataDir, 'print-editions');
 const root = new URL('../preview-a/', import.meta.url);
-const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const visible = catalog => catalog.categories.filter(c => c.visible !== false).map(c => ({
-  id:c.id, title:c.title, items:c.items.filter(i => i.visible !== false).map(({ id, name, description, price, options, addon }) => ({ id, name, description, price, options, addon }))
-}));
-export const printFingerprint = catalog => createHash('sha256').update(JSON.stringify({categories:visible(catalog),publicUrl:catalog.settings?.publicUrl||''})).digest('hex');
-const money = price => price == null ? null : '₡' + new Intl.NumberFormat('en-US').format(price);
+export const printFingerprint = catalog => createHash('sha256').update(JSON.stringify({layout:PRINT_DESIGN_VERSION,categories:visible(catalog),publicUrl:catalog.settings?.publicUrl||''})).digest('hex');
 export async function editions() {
   await mkdir(archive, { recursive:true });
   const files = (await readdir(archive)).filter(f => /^[a-f0-9-]{36}\.json$/.test(f));
@@ -29,16 +25,21 @@ export async function printStatus(catalog, lang = 'es') {
   return { version:catalog.version, current:latest?.fingerprint === fingerprint, changes:{added,changed,removed},
     editions:list.map(({snapshot,...edition}) => ({...edition, current:edition.fingerprint===fingerprint})) };
 }
-export async function printHtml(catalog, language = 'es', edition = {}) {
-  if (!['es','en'].includes(language)) throw Object.assign(new Error('Idioma no válido.'), {status:400});
-  const en=language==='en', tx=map=>map?.[language] || map?.es || '', price=p=>escape(money(p) || (en?'Ask for price':'Consultar precio'));
-  const logo=await readFile(new URL('central/assets/isabella-logo-transparent.png',root));
-  const qr=catalog.settings?.publicUrl?await QRCode.toDataURL(catalog.settings.publicUrl,{width:360,margin:4,errorCorrectionLevel:'M'}):null;
-  const groups=visible(catalog);
-  const rows=groups.map((category,index)=>`<section class="chapter"><header><span>ISABELLA’S · ${String(index+1).padStart(2,'0')}</span><h1>${escape(tx(category.title))}</h1></header><div class="dishes">${category.items.map(item=>`<article><div class="dish-title"><h2>${escape(tx(item.name))}</h2>${item.options?.length?'':`<strong>${price(item.price)}</strong>`}</div><p>${escape(tx(item.description))}</p>${(item.options||[]).map(o=>`<div class="variant"><span>${escape(tx(o.label))}</span><strong>${price(o.price)}</strong></div>`).join('')}${item.addon?`<div class="variant"><span>${escape(tx(item.addon.label))}</span><strong>${price(item.addon.price)}</strong></div>`:''}</article>`).join('')}</div></section>`).join('');
-  return `<!doctype html><html lang="${language}"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Isabella’s · ${en?'Printed menu':'Menú impreso'}</title><style>
-  @page{size:A4;margin:18mm 17mm 20mm}*{box-sizing:border-box}body{margin:0;color:#30272a;background:#fff;font:11pt/1.5 Arial,sans-serif}h1,h2{font-family:Georgia,serif;font-weight:400}header>span,.edition{font:9pt/1.6 Arial,sans-serif;letter-spacing:.12em;color:#6a3448}h1{font-size:32pt;line-height:1.1;color:#592f3e;margin:5mm 0 9mm}.cover{min-height:245mm;break-after:page;display:flex;flex-direction:column;align-items:center;text-align:center;justify-content:center}.cover img{width:85mm;height:auto}.cover h1{margin-top:18mm;font-size:40pt}.cover p{max-width:115mm}.index{margin:10mm 0;display:grid;grid-template-columns:1fr 1fr;gap:3mm 12mm;text-align:left}.chapter{break-before:page}.chapter header{border-bottom:.3mm solid #ac8995;margin-bottom:8mm}.dishes{column-count:2;column-gap:12mm}article{break-inside:avoid;margin:0 0 9mm;padding:0}.dish-title,.variant{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4mm;align-items:baseline;width:100%}.dish-title h2,.variant span{min-width:0;overflow-wrap:anywhere}h2{font-size:15pt;line-height:1.2;margin:0;overflow-wrap:anywhere}.dish-title strong,.variant strong{white-space:nowrap;font-size:10pt}p{margin:2mm 0 0;overflow-wrap:anywhere}.variant{font-size:10pt;margin-top:2mm}.edition{margin-top:12mm}.screen-note{background:#eee;padding:16px;text-align:center;font-size:14px}@media screen{body{max-width:210mm;margin:auto;padding:20px}.chapter{padding:24px 0}.cover{min-height:700px}}@media screen and (max-width:600px){.dishes{column-count:1}.cover img{max-width:80%;width:280px}.cover{min-height:500px}.index{grid-template-columns:1fr}h1{font-size:32px}.screen-note{margin:-20px -20px 20px}}@media print{.screen-note{display:none}}
-  </style><body><div class="screen-note">${en?'Print preview · A4 portrait · Use the administration to create an archived PDF.':'Vista previa · A4 vertical · Genera la edición PDF desde la administración.'}</div><section class="cover"><img src="data:image/png;base64,${logo.toString('base64')}" alt="Isabella’s"><h1>${en?'At the table':'A la mesa'}</h1><p>${en?'Italian cooking · Menu':'Cocina italiana · La carta'}</p><div class="index">${groups.map((c,i)=>`<span>${String(i+1).padStart(2,'0')} &nbsp; ${escape(tx(c.title))}</span>`).join('')}</div><p>${en?'Prices in Costa Rican colones. Taxes included; 10% service not included.':'Precios en colones costarricenses. Incluyen impuestos; no incluyen 10 % de servicio.'}</p>${qr?`<figure style="margin:6mm 0 0"><img src="${qr}" style="width:30mm" alt="QR"><figcaption style="font-size:9pt">${en?'Explore our digital menu':'Consulta la carta digital'}</figcaption></figure>`:''}<p class="edition">${escape(edition.createdAt ? new Date(edition.createdAt).toLocaleDateString(language==='es'?'es-CR':'en-US') : 'Vista previa')} · ${en?'Revision':'Revisión'} ${catalog.version}</p></section>${rows}</body></html>`;
+export async function printHtml(catalog, language = 'es', edition = {}, interactive = true) {
+  const snapshot = projectMenu(catalog, language), en = language === 'en';
+  const logo = await readFile(new URL('central/assets/isabella-logo-transparent.png',root));
+  const texture = await readFile(new URL('print-menu/assets/ivory-marble.png',root));
+  const qrImage = snapshot.publicUrl ? await QRCode.toDataURL(snapshot.publicUrl,{width:360,margin:4,errorCorrectionLevel:'M'}) : null;
+  const body = renderPrintBody(snapshot,{logo:'data:image/png;base64,'+logo.toString('base64'),texture:'data:image/png;base64,'+texture.toString('base64'),qrImage});
+  let styles = '<link rel="stylesheet" href="/print-menu/style.css">';
+  if (!interactive) {
+    let css = await readFile(new URL('print-menu/style.css',root),'utf8');
+    for(const [url,path] of [['./assets/fraunces-print.ttf','print-menu/assets/fraunces-print.ttf'],['../shared-print/vendor/NotoSans-Regular.ttf','shared-print/vendor/NotoSans-Regular.ttf']]) {
+      css = css.replace(url,'data:font/ttf;base64,'+(await readFile(new URL(path,root))).toString('base64'));
+    }
+    styles = '<style>'+css+'</style>';
+  }
+  return `<!doctype html><html lang="${language}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Isabella’s · ${en?'Printed menu':'Menú impreso'}</title>${styles}${interactive?'<script type="module" src="/print-menu/preview.js"></script>':''}</head><body class="isabella-print-document">${interactive?`<div class="isa-print-toolbar"><p id="isa-print-message" role="status">${en?'A4 landscape preview. Create an archived PDF from the administration.':'Vista previa A4 horizontal. Genera la edición PDF desde la administración.'}</p><button id="isa-print-button" type="button" disabled>${en?'Print or save PDF':'Imprimir o guardar PDF'}</button></div>`:''}${body}</body></html>`;
 }
 let generation = Promise.resolve();
 export function generateEdition(version, language, author) {
@@ -55,9 +56,11 @@ export function generateEdition(version, language, author) {
       browser=await launchBrowser();const page=await browser.newPage();
       await page.setRequestInterception(true);
       page.on('request',req=>/^(data:|about:)/.test(req.url())?req.continue():req.abort());
-      await page.setContent(await printHtml(catalog,language,edition),{waitUntil:'load'});
+      await page.setContent(await printHtml(catalog,language,edition,false),{waitUntil:'load'});
       await page.emulateMediaType('print');
-      const pdf=await page.pdf({format:'A4',preferCSSPageSize:true,printBackground:true,displayHeaderFooter:true,headerTemplate:'<span></span>',footerTemplate:'<div style="font-size:9px;width:100%;text-align:center;color:#66515a">Isabella’s · <span class="pageNumber"></span> / <span class="totalPages"></span></div>'});
+      const module='data:text/javascript;base64,'+(await readFile(new URL('print-menu/layout.js',root))).toString('base64');
+      await page.evaluate(async source=>{const {paginatePrint}=await import(source);await paginatePrint(document.querySelector('.isabella-print'));},module);
+      const pdf=await page.pdf({format:'A4',landscape:true,preferCSSPageSize:true,printBackground:true,displayHeaderFooter:false});
       // Metadata is the commit point. Interrupted generation never replaces a previous edition.
       await mkdir(archive,{recursive:true});
       await writeFile(resolve(archive,edition.id+'.pdf'),pdf,{flag:'wx'});

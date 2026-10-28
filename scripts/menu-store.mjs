@@ -4,9 +4,10 @@ import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { categories as seed, locales } from '../preview-a/menu-data.js';
 import { translateSpanish } from './translate-menu.mjs';
+import { dataDir } from './preview-config.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-export const dataDir = process.env.ISABELLA_DATA_DIR ? resolve(process.env.ISABELLA_DATA_DIR) : resolve(root, 'data');
+export { dataDir };
 export const dataFile = resolve(dataDir, 'menu.json');
 const originals = new Set(['1-PRE.webp', '2-PRE.webp', '7-PRE.webp', 'ALL-4-D.webp', '4-PRE.webp', 'ALL-4-C.webp', 'ALL-4-A.webp', 'ALL-4-B.webp']);
 const idPattern = /^[a-z0-9][a-z0-9-]{0,79}$/;

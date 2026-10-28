@@ -17,7 +17,7 @@ const authFile = resolve(dataDir, 'admin-auth.json');
 const uploadDir = resolve(root, 'assets/uploads');
 const explicitPort = process.env.ISABELLA_PREVIEW_PORT;
 let port = Number(explicitPort) || 4180;
-const mime = { '.html':'text/html; charset=utf-8', '.js':'text/javascript; charset=utf-8', '.css':'text/css; charset=utf-8', '.json':'application/json; charset=utf-8', '.webp':'image/webp', '.png':'image/png', '.jpg':'image/jpeg', '.svg':'image/svg+xml', '.woff2':'font/woff2' };
+const mime = { '.html':'text/html; charset=utf-8', '.js':'text/javascript; charset=utf-8', '.css':'text/css; charset=utf-8', '.json':'application/json; charset=utf-8', '.webp':'image/webp', '.png':'image/png', '.jpg':'image/jpeg', '.svg':'image/svg+xml', '.woff2':'font/woff2', '.ttf':'font/ttf' };
 const directoryPages = new Map([
   ['/admin/', '/admin/index.html'],
   ['/admin/personal/', '/admin/personal/index.html'],

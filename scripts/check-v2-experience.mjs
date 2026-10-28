@@ -131,9 +131,13 @@ try{
   const first=status.editions[0];const firstPDF=await fetch(base+'/api/menu.pdf?lang=es');assert.equal(firstPDF.status,200);
   const pdf=Buffer.from(await firstPDF.arrayBuffer());assert.equal(pdf.subarray(0,4).toString(),'%PDF');await writeFile(resolve(out,'Isabellas-edicion-es.pdf'),pdf);
   const preview=await browser.newPage();await preview.goto(base+'/api/admin/print/preview?lang=es');
+  await preview.waitForSelector('html[data-ready=true]');
   const visibleCount=(await request('/api/menu')).data.categories.reduce((n,c)=>n+c.items.length,0);
-  assert.equal(await preview.$$eval('.chapter article',nodes=>nodes.length),visibleCount);
-  await preview.screenshot({path:resolve(out,'impreso-portada.png')});await preview.$eval('.chapter',el=>el.scrollIntoView());await preview.screenshot({path:resolve(out,'impreso-interior.png')});
+  assert.equal(await preview.$$eval('.isa-dish',nodes=>nodes.length),visibleCount);
+  assert.equal(await preview.$('.cover'),null);
+  assert(!(await preview.$eval('.isabella-print',el=>el.textContent)).includes('A la mesa'));
+  assert(await preview.$$eval('.isa-print-column',nodes=>nodes.every(c=>c.scrollHeight<=c.clientHeight+1)));
+  await preview.screenshot({path:resolve(out,'impreso-primera-pagina.png')});await preview.$eval('.isa-print-page:nth-of-type(2)',el=>el.scrollIntoView());await preview.screenshot({path:resolve(out,'impreso-interior.png')});
   const duplicate=await request('/api/admin/print','POST',{version:status.version,language:'es'});assert.equal(duplicate.data.id,first.id);
   catalog=(await request('/api/admin/menu')).data;catalog.categories[0].items[1].price+=100;
   assert.equal((await request('/api/admin/menu','PUT',catalog)).status,200);

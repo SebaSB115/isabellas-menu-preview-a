@@ -97,7 +97,7 @@ try{
     }
     assert.deepEqual(errors,[]);
     const edgeCases=await page.evaluate(async brand=>{
-      const isa=brand==='isabella',module=await import(isa?'../shared-print/engine.js':'../v2/shared-print/engine.js');
+      const isa=brand==='isabella',module=await import(isa?'../print-menu/service.js':'../v2/shared-print/engine.js');
       const data=isa?await(await import('../admin/demo-store.js')).api('/api/admin/menu'):window.BoccV2DemoCatalog();
       const service=module.createPrintService({brand,readCatalog:()=>data,logo:''});
       let conflict=false,blocked=false;
@@ -113,7 +113,7 @@ try{
       snapshot.groups=[{id:'qa',title:'Prueba de textos largos y variantes',items:[{id:'long',name:'Plato de prueba con variantes',price:null,description:('Descripción extensa de prueba, ingredientes y preparación. ').repeat(60)+'FIN DEL TEXTO LARGO',options:[{label:'Porción pequeña',price:3500},{label:'Porción grande',price:5900}],addon:null},{id:'pending',name:'Precio pendiente de confirmar',description:'Sin fotografía ni precio inventado.',price:null,options:[],addon:null}]}];
       const logo=isa?'../central/assets/isabella-logo-transparent.png':'../preview/assets/boccantina-logo-transparent.png';
       const image=await new Promise(async r=>{const reader=new FileReader();reader.onload=()=>r(reader.result);reader.readAsDataURL(await(await fetch(logo)).blob());});
-      const doc=window.pdfMake.createPdf(module.definition(snapshot,{version:1,createdAt:new Date().toISOString()},image));
+      const doc=window.pdfMake.createPdf(await module.definition(snapshot,{version:1,createdAt:new Date().toISOString()},image));
       const blob=await doc.getBlob();
       return {conflict,blocked,availabilityIgnored,hiddenExcluded,pdf:Array.from(new Uint8Array(await blob.arrayBuffer()))};
     },brand);

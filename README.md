@@ -16,7 +16,7 @@ Demostración independiente de la web oficial. Los datos conservan las nueve pá
 
 **[Abrir la demostración pública de la central](https://sebasb115.github.io/isabellas-menu-preview-a/admin/)**
 
-**Impresión de la demo (27 de octubre):** Menú impreso permite vista previa, impresión, generación y descarga de PDF A4 en español e inglés. El historial se guarda en este navegador y detecta cambios del catálogo; no necesita el servidor de la laptop. Fuente compartida y límites en [shared-print](preview-a/shared-print/README.md). Ejecuta `node scripts/sync-browser-print.mjs --boccantina` para distribuir el motor a Boccantina y `node scripts/check-browser-print.mjs --both` para comprobar los flujos estáticos de ambos restaurantes.
+**Impresión de la demo (28 de octubre):** Menú impreso permite vista previa, impresión, generación y descarga de PDF A4 horizontal en español e inglés, con el logotipo oficial y composición marfil y dorada en dos columnas. El historial de la demo se guarda en este navegador y detecta cambios del catálogo y del diseño; no necesita el servidor de la laptop. La composición y la adaptación reproducible del motor se documentan en [print-menu](preview-a/print-menu/README.md). Ejecuta `node scripts/sync-isabella-print.mjs --check` y `node scripts/check-browser-print.mjs`. El motor compartido y Boccantina conservan sus archivos independientes.
 
 **[Elegir restaurante en la central compartida](https://sebasb115.github.io/isabellas-menu-preview-a/central/)**: entrada de demostración de la versión 2 para Isabella's y Boccantina. Cada restaurante conserva sus propias vistas y datos. Boccantina permite probar productos, categorías y disponibilidad; la demo pública no incluye autenticación privada real ni Firebase.
 
@@ -31,6 +31,8 @@ Para revisión desde otro equipo, el selector V2 de demostración se publica en 
 El usuario propietario de Isabella's se configura con `npm.cmd run admin:setup`. Boccantina conserva su cuenta propietaria independiente, configurada desde su propio repositorio. Las contraseñas se guardan como hash fuera de Git. Este acceso es **local de preview**; GitHub Pages no ejecuta los servidores ni protege sus demos estáticas. Para acceso privado desde Internet harán falta backend alojado, HTTPS y almacenamiento persistente.
 
 ### Usuarios y permisos en la central local
+
+La ruta de datos puede fijarse en `data/local-preview.json` (fuera de Git) con `{"dataDir":"ruta/relativa/al/repositorio"}`. El servidor y `admin:setup` usan esa misma carpeta al reiniciar. `ISABELLA_DATA_DIR` tiene prioridad para entornos explícitos y pruebas aisladas; sin configuración se conserva `data/`. Este archivo solo selecciona la ubicación: no copia ni reinicia cuentas, catálogos o ediciones.
 
 La cuenta propietaria de Isabella's abre **Administración** desde el menú de su central de carta. Allí crea usuarios de Isabella's y les asigna `Productos` o `Categorías e imágenes`. La sesión y la API comprueban los permisos antes de permitir operaciones; desactivar una cuenta revoca su siguiente acceso.
 

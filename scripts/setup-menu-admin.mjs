@@ -1,12 +1,12 @@
 import { randomBytes, scrypt as scryptCallback } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
+import { dataDir } from './preview-config.mjs';
 
 const scrypt = promisify(scryptCallback);
 const params = { N: 1 << 14, r: 8, p: 5 };
-const file = resolve(process.env.ISABELLA_DATA_DIR || resolve(dirname(fileURLToPath(import.meta.url)), '..', 'data'), 'admin-auth.json');
+const file = resolve(dataDir, 'admin-auth.json');
 const username = process.env.ISABELLA_ADMIN_USER || 'isabella-admin';
 if (!/^[a-zA-Z0-9._-]{3,80}$/.test(username)) { console.error('El usuario debe tener entre 3 y 80 caracteres alfanuméricos, punto, guion o guion bajo.'); process.exit(1); }
 if (!process.stdin.isTTY) { console.error('Ejecuta este comando en una terminal interactiva.'); process.exit(1); }

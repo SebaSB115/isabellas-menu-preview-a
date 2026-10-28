@@ -1,5 +1,5 @@
 import { categories as seed } from '../menu-data.js';
-import { createPrintService } from '../shared-print/engine.js';
+import { createPrintService } from '../print-menu/service.js';
 
 export const demoPrint = createPrintService({brand:'isabella', readCatalog, logo:new URL('../central/assets/isabella-logo-transparent.png', import.meta.url).href});
 

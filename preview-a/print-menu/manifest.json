@@ -1,0 +1,6 @@
+{
+  "source": "preview-a/shared-print/engine.js",
+  "sourceSha256": "2fac08fcc9d82179a942beda4c9de0903b32d0c350034b454ec4b16995323196",
+  "script": "scripts/sync-isabella-print.mjs",
+  "serviceSha256": "87333f1e0025a192f52869d4e840b623835f6ae4a1e0674ecbc3b09489243fdc"
+}
