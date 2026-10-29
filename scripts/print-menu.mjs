@@ -1,3 +1,4 @@
+import {inlineBotanicalLayout,inlineBotanicalCss} from './print-botanical-inline.mjs';
 import { readFile, writeFile, mkdir, rename, readdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
@@ -36,7 +37,7 @@ export async function printHtml(catalog, language = 'es', edition = {}, interact
   const body = renderPrintBody(snapshot,{logo:'data:image/png;base64,'+logo.toString('base64'),texture:'data:image/png;base64,'+texture.toString('base64'),qrImage});
   let styles = '<link rel="stylesheet" href="/print-menu/style.css">';
   if (!interactive) {
-    let css = await readFile(new URL('print-menu/style.css',root),'utf8');
+    let css = await inlineBotanicalCss(await readFile(new URL('print-menu/style.css',root),'utf8'));
     for(const [url,path] of [['./assets/fraunces-print.ttf','print-menu/assets/fraunces-print.ttf'],['../shared-print/vendor/NotoSans-Regular.ttf','shared-print/vendor/NotoSans-Regular.ttf']]) {
       css = css.replace(url,'data:font/ttf;base64,'+(await readFile(new URL(path,root))).toString('base64'));
     }
@@ -65,7 +66,7 @@ export function generateEdition(version, language, author, proposal = 'actual', 
       page.on('request',req=>/^(data:|about:)/.test(req.url())?req.continue():req.abort());
       await page.setContent(await printHtml(catalog,language,edition,false,proposal,size,design),{waitUntil:'load'});
       await page.emulateMediaType('print');
-      const layout=(await readFile(new URL('print-menu/layout.js',root),'utf8')).replace("import {normalizePrintDesign} from '../shared-print/design.js';",await readFile(new URL('shared-print/design.js',root),'utf8'));
+      const layout=(await inlineBotanicalLayout(await readFile(new URL('print-menu/layout.js',root),'utf8'))).replace("import {normalizePrintDesign} from '../shared-print/design.js';",await readFile(new URL('shared-print/design.js',root),'utf8'));
       const module='data:text/javascript;base64,'+Buffer.from(layout).toString('base64');
       await page.evaluate(async source=>{const {paginatePrint}=await import(source);await paginatePrint(document.querySelector('.isabella-print'));},module);
       const paper={A4:['297mm','210mm'],A3:['420mm','297mm'],A2:['594mm','420mm']}[size];

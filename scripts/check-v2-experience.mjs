@@ -148,8 +148,8 @@ try{
   const second=await request('/api/admin/print','POST',{version:status.version,language:'es'});assert.equal(second.status,201);assert.notEqual(second.data.id,first.id);
   assert.deepEqual(await readFile(resolve(data,'print-editions',first.id+'.pdf')),pdf);
   assert.equal((await request('/api/admin/print','POST',{version:status.version,language:'en'})).status,201);
-  for(const [size,expected,columns] of [['A3',1190,1],['A2',1683,2]]){
-    const proposal='p-'+randomUUID(),design={...printDesignDefaults('isabella'),columns,margin:columns===1?25:18};
+  for(const [size,expected,columns,template] of [['A4',841.89,2,'botanical'],['A3',1190,1],['A2',1683,2]]){
+    const proposal='p-'+randomUUID(),design={...printDesignDefaults('isabella'),columns,margin:columns===1?25:18,...(template?{template}: {})};
     const variant=await request('/api/admin/print','POST',{version:status.version,language:'es',proposal,size,design});assert.equal(variant.status,201);
     const bytes=await readFile(resolve(data,'print-editions',variant.data.id+'.pdf'));
     const media=bytes.toString('latin1').match(/\/MediaBox\s*\[\s*0\s+0\s+([\d.]+)\s+([\d.]+)/);

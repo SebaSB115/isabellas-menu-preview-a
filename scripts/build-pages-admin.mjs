@@ -19,7 +19,7 @@ app="import { api, resetDemo } from './demo-store.js';\n"+app.slice(0,start)+app
 app += "\n$('reset-demo').addEventListener('click',async()=>{if(!await guard())return;if(confirm('¿Restablecer esta demostración en este navegador?')){resetDemo();location.reload();}});\n";
 app=app.replace('Al guardar se traduce automáticamente al inglés con el motor local gratuito. Puedes revisar y ajustar la traducción.','En la demo estática, escribe el inglés manualmente. El motor automático está disponible en el servidor local.');
 await mkdir(target,{recursive:true});
-await cp(resolve(repo,'preview-a/shared-print'),resolve(repo,'docs/shared-print'),{recursive:true});
+await cp(resolve(repo,'preview-a/shared-print'),resolve(repo,'docs/shared-print'),{recursive:true,filter:sourcePath=>!sourcePath.replaceAll('\\','/').includes('/shared-print/art')});
 await cp(resolve(repo,'preview-a/print-menu'),resolve(repo,'docs/print-menu'),{recursive:true});
 await Promise.all([writeFile(resolve(target,'index.html'),html),writeFile(resolve(target,'app.js'),app),
   ...['style.css','tabler-workspace.css','form-state.js','demo-store.js'].map(file=>copyFile(resolve(source,file),resolve(target,file)))]);

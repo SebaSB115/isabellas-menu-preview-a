@@ -1,3 +1,4 @@
+import {createBotanicalDefinition} from '../shared-print/botanical-definition.js';
 import {renderPrintBody,paginatePrint,paperArtwork} from './layout.js';
 let stylesheet;
 const point = px => px * 72 / 96;
@@ -37,6 +38,7 @@ function linesOf(element,paper){
   }));
 }
 export async function createPrintDefinition(snapshot,edition,logo,pdf){
+  if(snapshot.design?.template==='botanical')return createBotanicalDefinition(snapshot,edition,logo,pdf,'isabella');
   if(!snapshot.groups.length)throw new Error('No hay productos visibles para imprimir. Revisa el catálogo.');
   await loadStyles();const texture=await textureData(),font=new URL('./assets/fraunces-print.ttf',import.meta.url).href;
   pdf.addFonts({IsabellaPrintSerif:{normal:font,bold:font,italics:font,bolditalics:font}});

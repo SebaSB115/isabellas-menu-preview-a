@@ -1,0 +1,20 @@
+{
+  "purpose": "Muestras ilustrativas para propuestas de menú impreso; no son fotografías oficiales de platos.",
+  "generationTool": "image_gen (herramienta integrada)",
+  "generated": [
+    {
+      "file": "dessert-sample.png",
+      "prompt": "Create a single photorealistic editorial food photograph for a restaurant printed menu category 'Desserts'. Top-down 90 degree flat lay, one small round dark ceramic plate with a chocolate fondant, a modest scoop of vanilla ice cream, three raspberries and a tiny mint leaf. Entire round plate visible centrally with generous breathing room, subtly textured charcoal tabletop. Soft natural side light, realistic portions and food texture, sophisticated Italian wine bar aesthetic, warm dark brown chocolate and cream. Square composition suitable for circular crop. No text, no logo, no cutlery, no hands, no collage. This is an illustrative sample, not an official restaurant dish."
+    },
+    {
+      "file": "pizza-sample.png",
+      "prompt": "Photorealistic overhead flat lay restaurant editorial photograph for a Pizzas category in an elegant Italian wine bar printed menu. One complete round thin crust margherita pizza, blistered baked edges, melted mozzarella, tomato sauce and a few fresh basil leaves. Centered on a round dark ceramic plate, all edges in frame, charcoal stone table with generous space around. Natural soft side light, realistic food, no text no logos no utensils no people. Square composition to be used in a circular crop. Illustrative sample, not an official restaurant photograph."
+    },
+    {
+      "file": "minis-sample.png",
+      "prompt": "Single photorealistic overhead food photograph: three miniature gourmet chicken burgers on a round dark ceramic plate, golden brioche buns, crisp chicken, fresh lettuce and a little sauce, with a small tidy serving of fries. Complete circular plate centered, charcoal stone tabletop, warm natural sidelight, authentic culinary photography. Square composition with all food visible, suitable for circular category photo in a dark green and gold restaurant printed menu. No text, branding, watermark, hands or collage. Illustrative sample only."
+    }
+  ],
+  "existingAssets": "El mapa reproducible de fotografías y fondos existentes está en scripts/build-botanical-assets.mjs. Las imágenes de Isabella provienen de design-lab/assets/reference-v2; las restantes de Boccantina, del snapshot y de la foto de Cachapa aportada por el usuario.",
+  "logos": "Se utilizan los PNG transparentes oficiales existentes. No se generaron ni alteraron logotipos."
+}

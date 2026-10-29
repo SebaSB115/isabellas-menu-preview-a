@@ -1,6 +1,6 @@
 import { api, resetDemo } from './demo-store.js';
 import { formSnapshot, tablerComponents } from './form-state.js';
-import {loadPrintDrafts,savePrintDrafts,createPrintDraft,printDraftFields,readPrintDraft} from '../shared-print/drafts.js';
+import {loadPrintDrafts,savePrintDrafts,createPrintDraft,printDraftFields,readPrintDraft,printDraftFeedback} from '../shared-print/drafts.js';
 import {renderPrintBody,paginatePrint,fitPrintPreview,projectMenu} from '../print-menu/layout.js';
 const $ = id => document.getElementById(id);
 const languages = [['es','Español'],['en','English'],['de','Deutsch'],['ar','العربية · RTL'],['he','עברית · RTL']];
@@ -35,16 +35,28 @@ const printQuery=()=>`lang=${printLanguage}&proposal=${encodeURIComponent(printP
 let printProposal = 'actual';
 let printSize = 'A4';
 let printVersion = null;
+let printRefreshRequest=0,printEditorInvalid=false;
+function setPrintEditorInvalid(invalid){
+  printEditorInvalid=invalid;
+  const preview=$('tools-panel').querySelector('.print-controls a'),print=$('tools-panel').querySelector('[data-demo-print]');
+  if(preview)preview.setAttribute('aria-disabled',String(invalid));
+  if(print)print.disabled=invalid;
+  if(invalid){printRefreshRequest++;if($('generate-print'))$('generate-print').disabled=true;$('print-current')?.replaceChildren();}
+}
 let stopPrintPreview;
 let printPreviewRequest=0;
+let printStylesReady;
 async function renderPrintPreview(){
   const host=$('print-live-preview');if(!host||!catalog)return;
   const request=++printPreviewRequest;
   try{
-    if(!document.querySelector('[data-print-styles]')){
-      const link=document.createElement('link');link.rel='stylesheet';link.dataset.printStyles='true';link.href='../print-menu/style.css';document.head.append(link);
-      await new Promise((resolve,reject)=>{link.onload=resolve;link.onerror=reject;});
+    if(!printStylesReady){
+      printStylesReady=new Promise((resolve,reject)=>{
+        const link=document.createElement('link');link.rel='stylesheet';link.dataset.printStyles='true';link.href='../print-menu/style.css';
+        link.onload=resolve;link.onerror=()=>{printStylesReady=null;link.remove();reject(new Error('No se pudieron cargar los estilos de la propuesta.'));};document.head.append(link);
+      });
     }
+    await printStylesReady;
     if(request!==printPreviewRequest||!host.isConnected)return;
     stopPrintPreview?.();
     host.innerHTML=renderPrintBody({...projectMenu(catalog,printLanguage),design:printDesign()});
@@ -52,7 +64,7 @@ async function renderPrintPreview(){
     await paginatePrint(menu);
     if(request!==printPreviewRequest||!host.isConnected)return;
     stopPrintPreview=fitPrintPreview(menu);
-  }catch(error){if(host.isConnected)host.textContent=`No se pudo mostrar la vista previa: ${error.message}`;}
+  }catch(error){if(request===printPreviewRequest&&host.isConnected)host.textContent=`No se pudo mostrar la vista previa: ${error.message}`;}
 }
 let dirty = false;
 let noticeTimer;
@@ -631,6 +643,7 @@ $('editor-panel').addEventListener('click', async event => {
 window.addEventListener('beforeunload', event => { if (dirty || uploading) { event.preventDefault(); event.returnValue = ''; } });
 
 function renderTools() {
+  printEditorInvalid=false;
   $('editor-panel').replaceChildren();
   const isPrint=tab==='print', title=isPrint?'Menú impreso':'Promociones';
   $('page-title').textContent=title;$('breadcrumb-current').textContent=title;
@@ -672,9 +685,17 @@ function renderTools() {
   }
   tablerComponents();renderPrintPreview();refreshPrint();
 }
-async function refreshPrint() {
+async function refreshPrint(reloadCatalog=false) {
+  const request=++printRefreshRequest;
+  if($('generate-print'))$('generate-print').disabled=true;
+  $('print-current')?.replaceChildren();
   try{
-    const data=await api('/api/admin/print?'+printQuery());if(tab!=='print')return;
+    if(reloadCatalog){
+      const latest=await api('/api/admin/menu');
+      if(request!==printRefreshRequest||tab!=='print')return;
+      catalog=latest;await renderPrintPreview();
+    }
+    const data=await api('/api/admin/print?'+printQuery());if(tab!=='print'||request!==printRefreshRequest||printEditorInvalid)return;
     printVersion=data.version;
     $('print-feedback').textContent=document.body.dataset.staticDemo==='true'?'PDF e historial guardados en este navegador. Puedes descargar el archivo para compartirlo o imprimirlo.':'';
     $('print-status').textContent=data.current?`${printName(printProposal)} · ${printSize} · ${printLanguage.toUpperCase()} actualizado.`:`Esta combinación todavía no tiene un PDF vigente. Cambios de contenido desde su última edición: ${data.changes.added} incorporaciones, ${data.changes.changed} modificaciones y ${data.changes.removed} retiradas.`;
@@ -686,7 +707,7 @@ async function refreshPrint() {
     if(document.body.dataset.staticDemo==='true')document.querySelectorAll('[data-edition]').forEach(link=>{
       const button=document.createElement('button');button.type='button';button.className=link.className;button.dataset.edition=link.dataset.edition;button.textContent=link.textContent;link.replaceWith(button);
     });
-  }catch(error){if($('print-feedback'))$('print-feedback').textContent=error.message;}
+  }catch(error){if(request===printRefreshRequest&&$('print-feedback'))$('print-feedback').textContent=error.message;}
 }
 function updatePromotionPreview() {
   const form=$('edit-form');if(form?.dataset.kind!=='content')return;
@@ -701,12 +722,12 @@ $('tools-panel').addEventListener('change',event=>{
     const draft=selectedPrintDraft();if(!draft)return;
     try{
       const updated=readPrintDraft($('tools-panel'),draft,'isabella',printDrafts);
-      printDrafts=printDrafts.map(item=>item.id===draft.id?updated:item);savePrintDrafts('isabella',printDrafts);
+      const next=printDrafts.map(item=>item.id===draft.id?updated:item);savePrintDrafts('isabella',next);printDrafts=next;
       $('print-proposal').selectedOptions[0].textContent=updated.name;
       $('tools-panel').querySelector('.print-controls a').href='/api/admin/print/preview?'+printQuery();
-      $('tools-panel').querySelector('.print-editor-message').textContent='Propuesta guardada en este navegador.';
+      setPrintEditorInvalid(false);printDraftFeedback($('tools-panel'),'Propuesta guardada en este navegador.');
       renderPrintPreview();refreshPrint();
-    }catch(error){$('tools-panel').querySelector('.print-editor-message').textContent=error.message;}
+    }catch(error){setPrintEditorInvalid(true);printDraftFeedback($('tools-panel'),error.message,true);}
     return;
   }
   if(event.target.id==='print-language'){printLanguage=event.target.value;renderTools();}
@@ -715,6 +736,9 @@ $('tools-panel').addEventListener('change',event=>{
   else updatePromotionPreview();
 });
 $('tools-panel').addEventListener('click',async event=>{
+  if(printEditorInvalid&&event.target.closest('#generate-print,.print-controls a,[data-demo-print]')){
+    event.preventDefault();$('tools-panel').querySelector('[aria-invalid="true"]')?.focus();return;
+  }
   if(event.target.id==='print-add'){
     if(printDrafts.length<2){const value=createPrintDraft('isabella',printDrafts.length+1);printDrafts.push(value);savePrintDrafts('isabella',printDrafts);printProposal=value.id;renderTools();}return;
   }
@@ -732,7 +756,7 @@ $('tools-panel').addEventListener('click',async event=>{
     }
   }
   if(event.target.closest('[data-discard]')){renderTools();return;}
-  if(event.target.id==='refresh-print'){await refreshPrint();return;}
+  if(event.target.id==='refresh-print'){await refreshPrint(true);return;}
   if(event.target.id!=='generate-print')return;
   const button=event.target;button.disabled=true;button.textContent='Preparando PDF…';button.setAttribute('aria-busy','true');
   $('print-feedback').textContent='Puedes seguir trabajando cuando termine la generación.';

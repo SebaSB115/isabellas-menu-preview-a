@@ -1,3 +1,4 @@
+import {renderBotanical,paginateBotanical,fitBotanical} from '../shared-print/botanical.js';
 import {normalizePrintDesign} from '../shared-print/design.js';
 export const PRINT_DESIGN_VERSION = 'isabella-ivory-2026-10-28-r2';
 const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -27,6 +28,7 @@ export function paperArtwork(centerRule=true) {
 }
 
 export function renderPrintBody(snapshot, assets = {}) {
+  if(snapshot.design?.template==='botanical')return renderBotanical(snapshot,'isabella',assets.logo || new URL('../central/assets/isabella-logo-transparent.png',import.meta.url).href);
   const en = snapshot.language === 'en';
   const design=snapshot.design?normalizePrintDesign(snapshot.design,'isabella'):null;
   const style=design?` style="--print-columns:${design.columns};--print-margin:${design.margin}mm;--print-gap:${design.gutter}mm;--print-logo:${design.logoWidth}mm;--print-title:${design.titleSize}pt;--print-body:${design.bodySize}pt;--print-item-gap:${design.itemSpacing}mm;--print-logo-align:${design.logoAlign==='left'?'flex-start':'center'}"`:'';
@@ -47,6 +49,7 @@ export function renderPrintBody(snapshot, assets = {}) {
 }
 
 export async function paginatePrint(menu) {
+  if(menu.classList.contains("botanical-menu"))return paginateBotanical(menu);
   await Promise.all([document.fonts.load('16px IsabellaPrintSerif'),document.fonts.load('16px IsabellaPrintSans')]);
   menu.querySelectorAll('.isa-print-page').forEach(p=>p.remove());
   const groups=[...menu.querySelector('[data-print-source]').content.children], paper=menu.querySelector('[data-print-paper]'), en=menu.dataset.language==='en';
@@ -133,6 +136,7 @@ export async function paginatePrint(menu) {
 }
 
 export function fitPrintPreview(menu){
+  if(menu.classList.contains("botanical-menu"))return fitBotanical(menu);
   const update=()=>{const paper=menu.querySelector('.isa-print-sheet');if(paper)menu.style.setProperty('--isa-paper-scale',Math.min(1,menu.clientWidth/paper.offsetWidth));};
   const observer=new ResizeObserver(update);observer.observe(menu);update();return()=>observer.disconnect();
 }

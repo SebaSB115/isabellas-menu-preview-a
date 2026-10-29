@@ -1,0 +1,14 @@
+import {readFile,writeFile} from 'node:fs/promises';
+import {resolve} from 'node:path';
+import sharp from 'sharp';
+const r=resolve(import.meta.dirname,'..'),b=resolve(r,'../boccantina-preview');
+const result={isabella:{photos:{}},boccantina:{photos:{}}};
+const image=async(file,width=640)=>'data:image/jpeg;base64,'+(await sharp(file).resize({width,withoutEnlargement:true}).jpeg({quality:84}).toBuffer()).toString('base64');
+for(const id of ['salads','starters','focaccia','stromboli','pasta','meats','cocktails','coffee'])result.isabella.photos[id]=await image(resolve(r,`preview-a/design-lab/assets/reference-v2/${id}-720.webp`));
+const gallery=resolve(b,'snapshot/boccantina.com/wp-content/uploads/revslider/mood-board-infinite-filmstrip-media-gallery');
+const map={entradas:resolve(b,'preview-src/v2/assets/cachapa.jpg'),burgers:resolve(b,'snapshot/boccantina.com/wp-content/uploads/2026/05/BURGUER.webp'),minis:resolve(r,'preview-a/shared-print/art/minis-sample.png'),bocas:resolve(gallery,'FOOD-1.webp'),pizzas:resolve(r,'preview-a/shared-print/art/pizza-sample.png'),postres:resolve(r,'preview-a/shared-print/art/dessert-sample.png'),vinos:resolve(gallery,'DRINK-5.webp'),autor:resolve(gallery,'DRINK-4.webp'),gin:resolve(gallery,'DRINK-3.webp'),rones:resolve(gallery,'DRINK-2.webp'),tequila:resolve(gallery,'DRINK-4.webp'),vodka:resolve(gallery,'DRINK-3.webp'),whisky:resolve(gallery,'DRINK-2.webp')};
+for(const [id,path] of Object.entries(map))result.boccantina.photos[id]=await image(path);
+result.isabella.texture=await image(resolve(r,'preview-a/print-menu/assets/ivory-marble.png'),1200);
+result.boccantina.texture=await image(resolve(b,'preview-src/v2/assets/print-marble-black.png'),1200);
+await writeFile(resolve(r,'preview-a/shared-print/botanical-assets.js'),'// Fotografías ilustrativas incorporadas para PDF local y demo sin dependencias de red.\nexport const botanicalAssets='+JSON.stringify(result)+';\n');
+console.log('Recursos botánicos preparados desde los originales del proyecto.');
